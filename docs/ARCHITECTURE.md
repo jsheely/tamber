@@ -244,7 +244,7 @@ WXT MV3. Contexts: **background** (service worker: context menus, commands, offs
 
 ### 9.4 `mobile/`
 
-Expo SDK 57, expo-router, custom dev client (share intent requires it). A pnpm workspace member like the others. pnpm's isolated linker (supported by Expo since SDK 54) gives `mobile/` its own `node_modules` with the SDK-pinned React 19.2 and TypeScript 6, while `web/` and `extension/` get React 19.3 and TypeScript 7; nothing is hoisted across packages, so the version split is harmless. Mobile depends on `"@tamber/client": "workspace:*"`; `expo/metro-config` detects the workspace root from `pnpm-workspace.yaml`, and `metro.config.js` adds the `source` export condition so Metro bundles `packages/client/src/*.ts` directly (hot reload, no build step). Jest maps `@tamber/client` to the same source files. If a native library ever fails under isolated linking, set `nodeLinker: hoisted` in `pnpm-workspace.yaml` (Expo's documented fallback).
+Expo SDK 57, expo-router, custom dev client (share intent requires it). A pnpm workspace member like the others, installed with pnpm's **hoisted** linker (`nodeLinker: hoisted` in `pnpm-workspace.yaml`, a flat npm-style `node_modules`). Isolated linking was tried first and works for the JS side, but React Native's C++ builds (react-native-screens, worklets, nitro-modules) mirror each module's absolute source path under `android/.cxx`, and on Windows the extra `node_modules/.pnpm/<hash>/node_modules/` segment pushed object paths past CMake's 250-character limit (ninja: "manifest build.ninja still dirty"). Hoisting removes that segment; Expo documents hoisted as the fallback for exactly this. A flat layout means every workspace shares one React, so **web and extension pin the same `react`/`react-dom` (19.2.3) as Expo SDK 57**; keep them aligned when upgrading, or React Native sees two React copies and fails with a null hooks dispatcher. Mobile depends on `"@tamber/client": "workspace:*"`; `expo/metro-config` detects the workspace root from `pnpm-workspace.yaml`, and `metro.config.js` adds the `source` export condition so Metro bundles `packages/client/src/*.ts` directly (hot reload, no build step). Jest maps `@tamber/client` to the same source files.
 
 ### 9.5 `packages/client` is consumed from source
 
@@ -280,13 +280,13 @@ All versions were checked against the npm and PyPI registries on 2026-09-26. Pin
 | charset-normalizer | 3.5.1 | text encoding detection |
 | dev: pytest / pytest-asyncio / ruff / mypy | 9.1.1 / 1.4.0 / 0.16.9 / 2.3.1 | |
 
-### Shared + web + extension (Node 24, pnpm 10; isolated node_modules per workspace)
+### Shared + web + extension (Node 24, pnpm 10; hoisted node_modules, one copy of each package)
 
 | Package | Version | Used by |
 |---|---|---|
 | typescript | ^7.0.2 (native compiler) | all |
 | @tamber/client | `workspace:*`, consumed from `src/` via the `source` export condition | web, extension, mobile |
-| react / react-dom / @types/react(-dom) | ^19.3.0 | web, extension |
+| react / react-dom / @types/react(-dom) | 19.2.3 / ~19.2.2, pinned to Expo SDK 57's React so the hoisted workspace has one copy | web, extension (and mobile) |
 | vite | ^8.3.1 | web (and WXT's peer) |
 | @vitejs/plugin-react | ^6.1.1 | web |
 | @mantine/core, hooks, notifications, dropzone | ^9.6.2 (bump together) | web; extension uses core, hooks, notifications |
@@ -338,7 +338,7 @@ expo 57.0.x, react-native 0.86.x, react 19.2.x, expo-router 57, expo-audio 57, e
 | D9 | PyTorch `kokoro` engine | kokoro-onnx | Only the PyTorch pipeline yields word timings (English). |
 | D10 | pypdf | pymupdf | License (AGPL). |
 | D11 | WXT for the extension | CRXJS v3 (2 days old), hand-rolled Vite | First-class offscreen, side panel and content-script entrypoints. |
-| D12 | pnpm workspace with isolated linking; mobile is a member; `@tamber/client` consumed from source via a `source` export condition | npm workspaces with mobile outside them and a prebuilt `dist/` | No cross-package hoisting, so Expo's React/TS pins never collide with web's; client edits hot-reload in every app without a build step. |
+| D12 | pnpm workspace with the hoisted linker and one shared React version; mobile is a member; `@tamber/client` consumed from source via a `source` export condition | Isolated linking (broke React Native's C++ builds on Windows: object paths over CMake's 250-character limit); npm workspaces with mobile outside them and a prebuilt `dist/` | Native builds get short paths on every OS; client edits hot-reload in every app without a build step. |
 | D13 | `TAMBER_ENGINE=fake` | Mocking in each client | Every builder tests against the real HTTP behaviour without the model. |
 | D14 | Port 8880 + `/v1/audio/speech` compatibility | New port | Drop-in for existing Kokoro-FastAPI integrations. |
 

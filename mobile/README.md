@@ -17,11 +17,12 @@ aloud through your self-hosted Tamber server and highlights each word as it is s
 
 ## Setup
 
-`mobile/` is a pnpm workspace member (see `docs/ARCHITECTURE.md` §9.4 and §12 D12). pnpm's
-isolated linker gives it its own `node_modules` with the SDK-pinned React 19.2 and TypeScript 6,
-while the web workspaces use React 19.3 and TypeScript 7; nothing is hoisted across packages. It
-consumes the shared client as `"@tamber/client": "workspace:*"`, resolved straight from
-`packages/client/src` (no build step, see below).
+`mobile/` is a pnpm workspace member (see `docs/ARCHITECTURE.md` §9.4 and §12 D12). The
+workspace uses pnpm's **hoisted** linker (flat, npm-style `node_modules`), because React Native's
+C++ builds need short paths on Windows (details below). Every workspace therefore shares one
+React: web and extension pin the same `react`/`react-dom` 19.2.3 as Expo SDK 57. It consumes the
+shared client as `"@tamber/client": "workspace:*"`, resolved straight from `packages/client/src`
+(no build step, see below).
 
 ```sh
 # from the repo root: one install covers every workspace, including mobile/
@@ -46,7 +47,8 @@ for the SDK (for example, SDK 57 pins `react-native-reanimated` 4.5.1 and `react
 ### How Metro finds `@tamber/client`
 
 `expo/metro-config` detects the pnpm workspace root (`pnpm-workspace.yaml`) and configures
-`watchFolders` and `nodeModulesPaths` for the monorepo. `metro.config.js` only adds one thing: the
+`watchFolders` and `nodeModulesPaths` for the monorepo (hoisted layout, so the module lives in the
+root `node_modules`). `metro.config.js` only adds one thing: the
 `source` export condition. `packages/client/package.json` lists `"source": "./src/index.ts"` (and
 `./src/brand.ts` for `@tamber/client/brand`) ahead of the `dist/` entries, so Metro bundles the
 TypeScript source directly, transpiled by `babel-preset-expo` like any app file, and edits under
@@ -54,9 +56,29 @@ TypeScript source directly, transpiled by `babel-preset-expo` like any app file,
 (`moduleNameMapper`), and `tsconfig.json` adds `customConditions: ["source", "react-native"]` so
 `tsc` sees the same files.
 
-If a native library ever fails to resolve under pnpm's isolated linker, switch the whole workspace
-to Expo's documented fallback by adding `nodeLinker: hoisted` to `pnpm-workspace.yaml` and
-re-running `pnpm install`.
+### Why the workspace uses pnpm's hoisted linker
+
+With pnpm's default isolated layout, a native module lives at
+`node_modules/.pnpm/<name>@<version>_<hash>/node_modules/<name>/`. React Native's CMake builds
+(react-native-screens, react-native-worklets, react-native-nitro-modules) mirror each module's
+absolute source path under `android/.cxx`, so on Windows the object paths passed CMake's
+250-character limit and the build died with `ninja: error: manifest 'build.ninja' still dirty
+after 100 tries` (Windows long-path support does not help: the SDK's ninja is not long-path aware).
+`nodeLinker: hoisted` in `pnpm-workspace.yaml` puts the module at `node_modules/<name>/` and cuts
+about 55 characters off every native build path. Expo documents hoisted as the fallback for this.
+
+Two consequences:
+
+- The flat layout has one copy of each package, so **web, extension and mobile must agree on the
+  React version** (currently 19.2.3, Expo SDK 57's pin). Two React copies show up as
+  `Cannot read properties of null (reading 'useRef')`.
+- If you change `nodeLinker` or see stale paths in a Gradle error, delete every `node_modules`
+  folder and `mobile/android`, then run `pnpm install` and `pnpm exec expo run:android` again:
+  pnpm does not always remove old junctions, and the generated Android project bakes the resolved
+  module paths into its Gradle settings.
+
+If a build still hits path limits (a deeper checkout path, for example), move the repo closer to
+the drive root, such as `C:\src\tamber`.
 
 ## Running the app: a dev client, not Expo Go
 

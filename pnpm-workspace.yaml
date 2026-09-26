@@ -3,3 +3,16 @@ packages:
   - web
   - extension
   - mobile
+
+# Hoisted (flat, npm-style) node_modules instead of pnpm's isolated layout. React Native's C++
+# builds mirror each module's absolute source path under android/.cxx, and on Windows the extra
+# ".pnpm/<hash>/node_modules" segment pushed those object paths past CMake's 250-character limit
+# (ninja: "build.ninja still dirty"). Expo documents hoisted as the fallback for exactly this.
+# Every workspace therefore shares ONE React: web and extension pin the same react/react-dom
+# version as Expo SDK 57 (19.2.x). Keep them aligned when upgrading, or React Native will see two
+# React copies.
+nodeLinker: hoisted
+
+# Only relevant if nodeLinker is switched back to isolated: shorter names inside node_modules/.pnpm
+# (default 60 on Windows) to keep native build paths short.
+virtualStoreDirMaxLength: 30
