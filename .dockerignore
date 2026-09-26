@@ -1,0 +1,60 @@
+# Build context = repo root (`docker build -t tamber .` with the root Dockerfile).
+# The Dockerfile only COPYs package manifests, packages/client, web, extension/package.json, mobile/package.json,
+# assets/brand and api/{requirements*,scripts,tamber_api}; keep everything else out of the context.
+
+# VCS, dependencies, build output, caches
+.git
+**/.git
+**/node_modules
+**/dist
+**/dev-dist
+**/build
+**/.output
+**/.wxt
+**/.vite
+**/coverage
+**/.cache
+**/*.tsbuildinfo
+**/.eslintcache
+
+# Python
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+api/tests
+api/.hf
+api/models
+
+# Model weights never come from the context (the image downloads and verifies them)
+**/*.pth
+**/*.pt
+**/*.onnx
+**/*.safetensors
+
+# Clients the image does not build (their manifests are still needed for the pnpm lockfile)
+mobile/*
+!mobile/package.json
+extension/*
+!extension/package.json
+
+# Docs research notes
+docs/research
+
+# Secrets and local config
+.env
+**/.env
+**/.env.*
+!.env.example
+**/*.pem
+**/*.key
+
+# OS / editor noise
+**/.DS_Store
+**/Thumbs.db
+.idea
+.vscode

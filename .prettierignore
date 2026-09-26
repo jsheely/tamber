@@ -1,0 +1,12 @@
+node_modules/
+**/dist/
+**/.output/
+**/.wxt/
+packages/client/fixtures/
+docs/research/
+assets/
+pnpm-lock.yaml
+
+# Hand-written docs keep compact Markdown tables (Prettier pads every table row to full width)
+README.md
+docs/*.md

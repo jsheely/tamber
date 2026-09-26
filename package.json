@@ -1,0 +1,47 @@
+{
+  "name": "tamber",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tamber: self-hosted Kokoro text-to-speech with word-by-word highlighting. Monorepo root (api/, web/, extension/, mobile/, packages/client).",
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,magenta \"pnpm run dev:api\" \"pnpm run dev:web\"",
+    "dev:fake": "concurrently -k -n api,web -c blue,magenta \"pnpm run dev:api:fake\" \"pnpm run dev:web\"",
+    "dev:api": "node scripts/dev-api.mjs --real",
+    "dev:api:fake": "node scripts/dev-api.mjs",
+    "dev:web": "pnpm --filter @tamber/web dev",
+    "dev:ext": "pnpm --filter @tamber/extension dev",
+    "dev:extension": "pnpm --filter @tamber/extension dev",
+    "dev:mobile": "pnpm --filter tamber-mobile start",
+    "build": "pnpm -r build",
+    "build:client": "pnpm --filter @tamber/client build",
+    "build:web": "pnpm --filter @tamber/web build",
+    "build:extension": "pnpm --filter @tamber/extension build",
+    "zip:extension": "pnpm --filter @tamber/extension zip",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "typecheck:mobile": "pnpm --filter tamber-mobile typecheck",
+    "lint:mobile": "pnpm --filter tamber-mobile lint",
+    "test:mobile": "pnpm --filter tamber-mobile test",
+    "docker:build": "docker build -t tamber .",
+    "docker:up": "docker compose up -d --build",
+    "format": "prettier --write \"packages/**/*.{ts,mjs,json,md}\" \"*.{json,md}\" \"docs/*.md\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,mjs,json,md}\" \"*.{json,md}\" \"docs/*.md\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.9.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "unrs-resolver"
+    ]
+  }
+}

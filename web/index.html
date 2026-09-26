@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-mantine-color-scheme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Tamber: self-hosted text-to-speech with word-by-word highlighting." />
+    <meta name="color-scheme" content="dark light" />
+    <title>Tamber</title>
+    <!-- Brand icon tags (from src/brand/head-tags.html; VitePWA injects the manifest link). -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#A855F7" />
+    <meta name="theme-color" content="#0F0D1C" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tamber" />
+    <!--
+      No-flash colour scheme (the ColorSchemeScript equivalent). The theme preference lives in the
+      zustand-persisted settings (localStorage "tamber.settings" = {state:{theme}, version}); the
+      Mantine colour-scheme manager in src/store/colorScheme.ts reads the same value.
+    -->
+    <script>
+      (function () {
+        var theme = 'auto';
+        try {
+          var raw = window.localStorage.getItem('tamber.settings');
+          var parsed = raw ? JSON.parse(raw) : null;
+          var t = parsed && parsed.state && parsed.state.theme;
+          if (t === 'light' || t === 'dark' || t === 'auto') theme = t;
+        } catch (e) {}
+        var scheme = theme;
+        if (theme === 'auto') {
+          scheme =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        }
+        var root = document.documentElement;
+        root.setAttribute('data-mantine-color-scheme', scheme);
+        root.style.backgroundColor = scheme === 'dark' ? '#0F0D1C' : '#FFFFFF';
+        root.style.colorScheme = scheme;
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Tamber needs JavaScript to play audio.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

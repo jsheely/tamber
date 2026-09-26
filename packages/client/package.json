@@ -1,0 +1,46 @@
+{
+  "name": "@tamber/client",
+  "version": "0.1.0",
+  "description": "Typed, platform-neutral client for the Tamber TTS API: contract types, NDJSON streaming, settings model, chunk planner and timeline helpers.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "react-native": "./dist/index.js",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./brand": {
+      "source": "./src/brand.ts",
+      "types": "./dist/brand.d.ts",
+      "import": "./dist/brand.js",
+      "default": "./dist/brand.js"
+    },
+    "./fixtures/chunking.json": "./fixtures/chunking.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "fixtures",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.dom-check.json",
+    "test": "pnpm run build && node --test \"test/*.test.mjs\"",
+    "fixtures": "pnpm run build && node scripts/generate-fixtures.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

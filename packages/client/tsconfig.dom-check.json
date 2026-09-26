@@ -1,0 +1,10 @@
+{
+  "//": "Compile-only check that DOM fetch/AbortSignal/Response are assignable to the package's platform-neutral *Like types. Not emitted.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src", "test-types"]
+}

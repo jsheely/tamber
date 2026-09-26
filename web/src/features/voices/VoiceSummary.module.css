@@ -1,0 +1,25 @@
+.card {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: var(--mantine-radius-lg);
+  background: var(--tamber-surface);
+  border: 1px solid var(--tamber-surface-border);
+  transition:
+    transform var(--tamber-motion-fast) var(--tamber-ease),
+    border-color var(--tamber-motion-fast) ease;
+}
+
+.card:hover {
+  border-color: var(--mantine-color-tamber-light-color);
+}
+
+.card:active {
+  transform: scale(0.985);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--mantine-color-tamber-4);
+  outline-offset: 2px;
+}

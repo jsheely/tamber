@@ -1,0 +1,20 @@
+<!--
+  Tamber icon tags: paste into the <head> of web/index.html.
+  The files are served from web/public (populated by scripts/copy-brand-assets.mjs).
+  No <link rel="manifest"> here: VitePWA({ manifest: pwaManifest }) (src/brand/pwa.ts) injects
+  <link rel="manifest" href="/manifest.webmanifest"> into the built index.html itself, so adding it
+  here produces a duplicate (verified with vite 8.3.1 + vite-plugin-pwa 1.3.0). Add it by hand only
+  if the app is built without vite-plugin-pwa.
+  iOS: "black-translucent" draws the page under the status bar. index.html must use
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"> and the
+  app shell must pad with env(safe-area-inset-*), or the header will sit under the clock/notch.
+-->
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="mask-icon" href="/mask-icon.svg" color="#A855F7" />
+<meta name="theme-color" content="#0F0D1C" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Tamber" />

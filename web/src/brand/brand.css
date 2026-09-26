@@ -1,0 +1,29 @@
+/* Tamber brand variables and logo recipes (from assets/brand/BRAND.md). */
+:root {
+  --tamber-violet: #a855f7;
+  --tamber-deep-violet: #7c3aed;
+  --tamber-cyan: #22d3ee;
+  --tamber-teal: #0e7490;
+  --tamber-lavender: #c084fc;
+  --tamber-bg: #0f0d1c;
+  --tamber-gradient: linear-gradient(62deg, #a855f7 0%, #22d3ee 100%); /* the mark gradient */
+  --tamber-tile: linear-gradient(135deg, #1a1631 0%, #07070d 100%); /* the icon background */
+}
+
+/* Gradient mark on any background, using /glyph.svg (web/public) as a mask. Set width to size it. */
+.tamber-mark {
+  display: inline-block;
+  width: 24px;
+  aspect-ratio: 1;
+  background: var(--tamber-gradient);
+  -webkit-mask: url(/glyph.svg) center / contain no-repeat;
+  mask: url(/glyph.svg) center / contain no-repeat;
+}
+
+/* Gradient text, for the "Tamber" wordmark next to the mark. */
+.tamber-gradient-text {
+  background: var(--tamber-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

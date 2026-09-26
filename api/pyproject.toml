@@ -1,0 +1,74 @@
+[project]
+name = "tamber-api"
+version = "0.1.0"
+description = "Tamber: self-hosted Kokoro text-to-speech API with word-level timestamps."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "UNLICENSED" }
+dependencies = [] # pinned in requirements.txt / requirements-tts.txt
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC", "RUF"]
+ignore = [
+  "RUF001", # ambiguous unicode characters are intentional (quotes, dashes, CJK punctuation)
+  "RUF002",
+  "RUF003",
+  "UP046", # keep Generic/TypeVar: the package supports Python 3.10+ (PEP 695 needs 3.12)
+  "UP047",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tamber_api"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["tamber_api"]
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = [
+  "kokoro",
+  "kokoro.*",
+  "misaki",
+  "misaki.*",
+  "torch",
+  "torch.*",
+  "trafilatura",
+  "trafilatura.*",
+  "ebooklib",
+  "ebooklib.*",
+  "docx",
+  "docx.*",
+  "av",
+  "av.*",
+  "markdown_it",
+  "markdown_it.*",
+  "huggingface_hub",
+  "huggingface_hub.*",
+]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+  "model: needs the real Kokoro model (skipped unless TAMBER_TEST_MODEL=1)",
+]
+filterwarnings = [
+  "error::pytest.PytestUnraisableExceptionWarning",
+  "ignore::DeprecationWarning:ebooklib.*",
+  # Starlette 1.x nudges TestClient users towards httpx2; httpx is what the contract pins.
+  "ignore:Using .httpx. with .starlette.testclient. is deprecated",
+]

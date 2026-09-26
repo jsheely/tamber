@@ -1,0 +1,63 @@
+# Tamber: one container with the API and the web UI.
+#
+#   docker compose up -d --build                            # CPU (default), from the repo root
+#   docker compose --profile gpu up -d --build tamber-gpu   # NVIDIA GPU variant (instead of the CPU one)
+#
+# Configuration comes from ./.env (copy .env.example); it is optional.
+
+name: tamber
+
+x-tamber: &tamber
+  image: tamber:latest
+  env_file:
+    - path: ./.env
+      required: false
+  ports:
+    - "8880:8880"
+  restart: unless-stopped
+  # Optional: keep the baked model/voices in a named volume so they survive image rebuilds
+  # (Docker seeds a new named volume from the image). Do NOT bind-mount an empty host directory
+  # here: it would hide the baked files and the container runs offline.
+  # volumes:
+  #   - tamber-hf:/opt/tamber/hf
+
+services:
+  tamber:
+    <<: *tamber
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TORCH_VARIANT: cpu
+        # Voices baked into the image; keep in sync with TAMBER_LANGUAGES in .env.
+        TAMBER_LANGUAGES: a,b
+        # WEB_STAGE: web-empty   # API only, no web UI
+
+  # NVIDIA GPU variant. Needs the NVIDIA Container Toolkit on the host. TORCH_VARIANT must be a
+  # CUDA channel that publishes the pinned torch (2.14.0: cu126, cu130, cu132; there is NO cu128
+  # build of 2.14.0). cu130 needs an NVIDIA driver >= 580; use cu126 for older drivers (no
+  # RTX 50-series support). Check https://download.pytorch.org/whl/ when bumping torch.
+  tamber-gpu:
+    <<: *tamber
+    profiles: ["gpu"]
+    image: tamber:cuda
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TORCH_VARIANT: cu130
+        TAMBER_LANGUAGES: a,b
+    environment:
+      TAMBER_DEVICE: cuda
+      # With a GPU, a couple of parallel jobs are fine.
+      TAMBER_MAX_CONCURRENT_SYNTH: "2"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# volumes:
+#   tamber-hf:

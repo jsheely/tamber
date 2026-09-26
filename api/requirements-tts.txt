@@ -1,0 +1,6 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+# Real Kokoro engine. torch comes from the PyTorch CPU index (the PyPI wheel drags in GBs of CUDA).
+# For a GPU image the Dockerfile swaps the index/local version via TORCH_VARIANT.
+torch==2.14.0+cpu
+kokoro==0.9.4
+misaki[en]==0.9.4

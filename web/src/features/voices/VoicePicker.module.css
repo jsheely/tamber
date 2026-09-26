@@ -1,0 +1,29 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 8px;
+  border-radius: var(--mantine-radius-lg);
+  border: 1px solid transparent;
+  transition: background-color var(--tamber-motion-fast) ease, border-color var(--tamber-motion-fast) ease;
+}
+
+.row:hover {
+  background: light-dark(var(--mantine-color-gray-0), rgba(255, 255, 255, 0.03));
+}
+
+.row[data-selected] {
+  background: var(--mantine-color-tamber-light);
+  border-color: var(--mantine-color-tamber-light-color);
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: 4px 0;
+  border-radius: var(--mantine-radius-md);
+}

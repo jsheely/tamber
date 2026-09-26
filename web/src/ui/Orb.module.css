@@ -1,0 +1,139 @@
+.root {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 45%, rgba(124, 58, 237, 0.9), rgba(34, 211, 238, 0.35) 55%, transparent 72%);
+  filter: blur(28px);
+  z-index: -1;
+}
+
+/* Two expanding ripples, like the logo: violet near the orb, cyan further out. */
+.ripple {
+  position: absolute;
+  inset: 26%;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 85, 247, 0.55);
+  opacity: 0;
+  transform: scale(1);
+  animation: ripple 2.6s var(--tamber-ease, ease-out) infinite;
+  animation-play-state: paused;
+}
+
+.ripple[data-ring='2'] {
+  border-color: rgba(34, 211, 238, 0.55);
+  animation-delay: 1.3s;
+}
+
+.root[data-state='playing'] .ripple {
+  animation-play-state: running;
+  animation-duration: 1.8s;
+}
+
+.root[data-state='playing'] .ripple[data-ring='2'] {
+  animation-delay: 0.9s;
+}
+
+.root[data-state='idle'] .ripple {
+  animation-play-state: running;
+  animation-duration: 4.2s;
+}
+
+.root[data-state='idle'] .ripple[data-ring='2'] {
+  animation-delay: 2.1s;
+}
+
+.breath {
+  position: absolute;
+  inset: 26%;
+  display: grid;
+  animation: breathe 4.8s ease-in-out infinite;
+}
+
+.root[data-state='playing'] .breath,
+.root[data-state='paused'] .breath {
+  animation-play-state: paused;
+}
+
+/* The speech-orb: a circle with its bottom-left corner squared off. */
+.core {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 50% 14%;
+  background: linear-gradient(62deg, #a855f7 0%, #7c3aed 30%, #6594f2 62%, #22d3ee 100%);
+  box-shadow:
+    0 12px 40px -8px rgba(124, 58, 237, 0.55),
+    inset 0 -8px 24px rgba(15, 13, 28, 0.25);
+  overflow: hidden;
+}
+
+.shine {
+  position: absolute;
+  inset: 8% 38% 50% 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 70%);
+  filter: blur(2px);
+}
+
+.shimmer {
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, transparent 0 55%, rgba(255, 255, 255, 0.55) 70%, transparent 85%);
+  opacity: 0;
+  transition: opacity var(--tamber-motion-base, 220ms) ease;
+}
+
+.root[data-state='loading'] .shimmer {
+  opacity: 1;
+  animation: spin 1.1s linear infinite;
+}
+
+.root[data-state='loading'] .core {
+  filter: saturate(0.85) brightness(1.05);
+}
+
+.root[data-reduced] .ripple,
+.root[data-reduced] .breath,
+.root[data-reduced] .shimmer {
+  animation: none;
+}
+
+.root[data-reduced][data-state='loading'] .shimmer {
+  opacity: 0.35;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.95);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

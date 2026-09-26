@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Tamber (16/32px)</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A1631"/>
+      <stop offset="1" stop-color="#07070D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="320" cy="512" r="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity=".42"/>
+      <stop offset=".55" stop-color="#7C3AED" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mark" x1="128" y1="721.8" x2="896" y2="302.2" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="252.8" cy="425.6" r="211.2" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="228" fill="url(#glow)"/>
+  <g fill="url(#mark)">
+    <path d="M128 512A192 192 0 1 1 320 704H172A44 44 0 0 1 128 660Z"/>
+    <path d="M566.8 217.8A384 384 0 0 1 566.8 806.2A64 64 0 0 1 484.6 708.1A256 256 0 0 0 484.6 315.9A64 64 0 0 1 566.8 217.8Z"/>
+    <path d="M734.3 111.9A576 576 0 0 1 734.3 912.1A64 64 0 0 1 642.3 823.2A448 448 0 0 0 642.3 200.8A64 64 0 0 1 734.3 111.9Z"/>
+  </g>
+  <path d="M128 512A192 192 0 1 1 320 704H172A44 44 0 0 1 128 660Z" fill="url(#sheen)"/>
+  <rect x="1.5" y="1.5" width="1021" height="1021" rx="226.5" fill="none" stroke="#FFFFFF" stroke-opacity=".07" stroke-width="3"/>
+</svg>

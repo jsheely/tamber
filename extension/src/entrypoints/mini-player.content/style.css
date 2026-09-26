@@ -1,0 +1,256 @@
+/* Mini-player styles, injected into its shadow root only (page CSS never reaches it). */
+:host {
+  --bg: rgba(15, 13, 28, 0.92);
+  --fg: #f4f2ff;
+  --dim: #a6a2bd;
+  --border: rgba(168, 85, 247, 0.35);
+  --word: rgba(168, 85, 247, 0.38);
+  --button: rgba(255, 255, 255, 0.08);
+  --button-hover: rgba(255, 255, 255, 0.16);
+  --gradient: linear-gradient(62deg, #a855f7 0%, #22d3ee 100%);
+  /* Fixed height of the sentence box, in lines. Chunks are usually <= 280 characters (about 4-6
+     lines at this width); longer ones scroll to follow the active word instead of growing. */
+  --lines: 4;
+  --sentence-line: 1.45;
+}
+
+@media (prefers-color-scheme: light) {
+  :host {
+    --bg: rgba(255, 255, 255, 0.95);
+    --fg: #1a1631;
+    --dim: #5a5675;
+    --border: rgba(124, 58, 237, 0.28);
+    --word: rgba(124, 58, 237, 0.18);
+    --button: rgba(26, 22, 49, 0.06);
+    --button-hover: rgba(26, 22, 49, 0.12);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.pill {
+  /* Set here, not on :host: WXT resets the host with `all: initial !important`. */
+  font-family:
+    'Inter Variable',
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  text-align: left;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(480px, calc(100vw - 32px));
+  padding: 12px 12px 14px 12px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    0 12px 32px rgba(7, 7, 13, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  animation: pop-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill:active {
+  cursor: grabbing;
+}
+
+.orb {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1631 0%, #07070d 100%);
+  box-shadow: 0 0 14px rgba(124, 58, 237, 0.5);
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #22d3ee;
+  opacity: 0;
+}
+
+.pill[data-status='playing'] .ring {
+  animation: ripple 1.6s ease-out infinite;
+}
+
+.pill[data-status='loading'] .orb,
+.pill[data-status='queued'] .orb {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Fixed height regardless of content: the pill never resizes between chunks. */
+.sentence {
+  position: relative;
+  margin: 0;
+  height: calc(var(--lines) * var(--sentence-line) * 13px);
+  line-height: var(--sentence-line);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  /* A gentle fade on the last line hints that a long chunk continues below. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 0.9em), rgba(0, 0, 0, 0.35));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 0.9em), rgba(0, 0, 0, 0.35));
+}
+
+.sentence.error {
+  color: #f87171;
+}
+
+.sentence .spoken {
+  opacity: 0.6;
+}
+
+mark {
+  color: inherit;
+  background: var(--word);
+  border-radius: 4px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  transition: background-color 120ms ease;
+}
+
+.label {
+  /* Always rendered (non-breaking space when empty) so the row never appears or disappears. */
+  margin: 0;
+  height: calc(1.45 * 12px);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buttons {
+  flex: none;
+  display: flex;
+  gap: 4px;
+}
+
+button {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--fg);
+  background: var(--button);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+button:hover {
+  background: var(--button-hover);
+}
+
+button:active {
+  transform: scale(0.9);
+}
+
+button:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 2px;
+}
+
+button.primary {
+  width: 36px;
+  height: 36px;
+  color: #fff;
+  background: var(--gradient);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.45);
+}
+
+.progress {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 4px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--button);
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--gradient);
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .pill[data-status='playing'] .ring,
+  .pill[data-status='loading'] .orb,
+  .pill[data-status='queued'] .orb {
+    animation: none;
+  }
+  .progress span,
+  button,
+  mark {
+    transition: none;
+  }
+}

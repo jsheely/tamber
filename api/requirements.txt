@@ -1,0 +1,17 @@
+# Base runtime requirements. Enough for TAMBER_ENGINE=fake (no torch).
+# The real Kokoro engine additionally needs requirements-tts.txt.
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-multipart==0.0.32
+httpx==0.28.1
+numpy>=1.26,<3
+av==18.1.0
+trafilatura==2.2.0
+pypdf==6.19.0
+python-docx==1.2.0
+ebooklib==0.20
+beautifulsoup4==4.15.0
+markdown-it-py==4.2.0
+charset-normalizer==3.5.1

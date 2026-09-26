@@ -1,0 +1,79 @@
+.root {
+  position: relative;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.125rem, 1.02rem + 0.5vw, 1.375rem);
+  line-height: 1.8;
+  letter-spacing: -0.003em;
+  color: var(--mantine-color-text);
+  -webkit-tap-highlight-color: transparent;
+  cursor: text;
+}
+
+.block {
+  /* Off-screen paragraphs skip layout and paint (100k-character texts stay smooth). */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 5.4em;
+}
+
+.chunk {
+  position: relative;
+  z-index: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background-color var(--tamber-motion-base) ease,
+    opacity var(--tamber-motion-base) ease;
+}
+
+.chunk[data-active] {
+  background-color: var(--tamber-chunk-bg);
+  box-shadow: 0 0 0 3px var(--tamber-chunk-bg);
+}
+
+.chunk[data-spoken],
+.word[data-spoken] {
+  opacity: var(--tamber-spoken-opacity);
+}
+
+.word {
+  transition: opacity var(--tamber-motion-base) ease;
+}
+
+.root[data-mode='word'] .word[data-active] {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .word:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--mantine-color-tamber-light-color);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+}
+
+.pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 8px;
+  background: var(--tamber-word-bg);
+  box-shadow: 0 0 18px var(--tamber-word-glow);
+  pointer-events: none;
+  will-change: transform, width, height;
+}
+
+.root[data-mode='chunk'] .pill {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chunk,
+  .word {
+    transition: none;
+  }
+}

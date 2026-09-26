@@ -1,0 +1,41 @@
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  padding: 0 calc(12px + var(--tamber-safe-right)) calc(10px + var(--tamber-safe-bottom))
+    calc(12px + var(--tamber-safe-left));
+  background: var(--tamber-dock-bg);
+  border-top: 1px solid var(--tamber-surface-border);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 -12px 40px -24px rgba(15, 13, 28, 0.55);
+}
+
+.inner {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.meta {
+  margin-top: -4px;
+}
+
+.wave {
+  flex: 1;
+  max-width: 240px;
+  min-width: 60px;
+}
+
+.controls {
+  margin-top: 4px;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
