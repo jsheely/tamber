@@ -3,6 +3,11 @@
 #   docker compose up -d --build                            # CPU (default), from the repo root
 #   docker compose --profile gpu up -d --build tamber-gpu   # NVIDIA GPU variant (instead of the CPU one)
 #
+# The GPU service reserves every NVIDIA GPU via deploy.resources.reservations.devices, which is
+# the Compose equivalent of `docker run --gpus all`. Host: NVIDIA driver + NVIDIA Container
+# Toolkit (Linux) or Docker Desktop with the WSL 2 backend (Windows). Test: `docker run --rm
+# --gpus all ubuntu nvidia-smi`.
+#
 # Configuration comes from ./.env (copy .env.example); it is optional.
 
 name: tamber
@@ -48,6 +53,7 @@ services:
         TORCH_VARIANT: cu130
         TAMBER_LANGUAGES: a,b
     environment:
+      # Explicit (not auto) so a missing GPU fails the startup loudly instead of running on CPU.
       TAMBER_DEVICE: cuda
       # With a GPU, a couple of parallel jobs are fine.
       TAMBER_MAX_CONCURRENT_SYNTH: "2"
@@ -56,7 +62,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              count: all # same as `docker run --gpus all`; use a number to limit it
               capabilities: [gpu]
 
 # volumes:

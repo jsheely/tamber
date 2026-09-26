@@ -5,7 +5,9 @@
 #
 #   docker build -t tamber .
 #   docker build --build-arg WEB_STAGE=web-empty -t tamber:api-only .   # no web UI
-#   docker build --build-arg TORCH_VARIANT=cu130 -t tamber:cuda .          # NVIDIA GPU
+#   docker build --build-arg TORCH_VARIANT=cu130 -t tamber:cuda .          # NVIDIA GPU, then:
+#   docker run --gpus all -e TAMBER_DEVICE=cuda -p 8880:8880 tamber:cuda    #   (needs the NVIDIA
+#                                                                           #    Container Toolkit)
 #
 # TORCH_VARIANT selects the PyTorch wheel channel. torch 2.14.0 is published for cpu, cu126, cu130
 # and cu132 (not cu128). Channels rotate between PyTorch releases: check

@@ -77,7 +77,46 @@ docker run -d --name tamber --env-file .env -p 8880:8880 --restart unless-stoppe
 
 The first build downloads PyTorch (CPU), spaCy, and the Kokoro model and voices, and verifies each file. After that the container runs **offline**. It starts in a few seconds; `/v1/health` reports `"status":"loading"` until the model is warm, then `"ok"`, and Docker's HEALTHCHECK turns `healthy`.
 
-**NVIDIA GPU:** `docker compose --profile gpu up -d --build tamber-gpu`. This builds with `TORCH_VARIANT=cu130` (driver >= 580; use `cu126` for older drivers) and needs the NVIDIA Container Toolkit. There is no `cu128` build of the pinned torch 2.14.0.
+### NVIDIA GPU
+
+The CPU image works everywhere. On a machine with an NVIDIA card, build the CUDA image and give the container the GPU; synthesis is several times faster and can run a couple of jobs in parallel.
+
+**1. Host prerequisites**
+
+- **Linux:** the NVIDIA driver plus the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). After installing it, register it with Docker once: `sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker`.
+- **Windows (Docker Desktop, WSL 2 backend):** only the regular Windows NVIDIA driver is needed. Docker Desktop passes the GPU through; do not install a driver inside WSL.
+- **Pick the CUDA channel from your driver.** `nvidia-smi` prints the highest CUDA version the driver supports (top right). `TORCH_VARIANT=cu130` (the default for the GPU service) needs driver >= 580. Use `cu126` for older drivers (note: no RTX 50-series support there). torch 2.14.0 publishes `cpu`, `cu126`, `cu130` and `cu132`; there is **no `cu128`** build.
+- **Check the passthrough works** before building anything:
+
+  ```sh
+  docker run --rm --gpus all ubuntu nvidia-smi
+  ```
+
+  If that prints your GPU, Docker can hand it to Tamber.
+
+**2. With Compose (recommended)**
+
+```sh
+docker compose --profile gpu up -d --build tamber-gpu
+```
+
+The `tamber-gpu` service builds with `TORCH_VARIANT=cu130`, sets `TAMBER_DEVICE=cuda` and `TAMBER_MAX_CONCURRENT_SYNTH=2`, and reserves every NVIDIA GPU through `deploy.resources.reservations.devices`, which is Compose's equivalent of `docker run --gpus all`. Edit the `TORCH_VARIANT` build arg in `docker-compose.yml` if you need `cu126`. Run either the CPU service or the GPU one, not both (they share port 8880).
+
+**3. Without Compose**
+
+```sh
+docker build --build-arg TORCH_VARIANT=cu130 -t tamber:cuda .
+docker run -d --name tamber --gpus all   -e TAMBER_DEVICE=cuda -e TAMBER_MAX_CONCURRENT_SYNTH=2   --env-file .env -p 8880:8880 --restart unless-stopped tamber:cuda
+```
+
+`--gpus all` is what makes the card visible inside the container; without it a CUDA image still starts but has no GPU. Setting `TAMBER_DEVICE=cuda` explicitly (rather than `auto`) is deliberate: if the GPU is missing, the model load fails and the container exits with a clear error in `docker logs tamber`, instead of quietly running on the CPU. Drop `--env-file .env` if you have no `.env`.
+
+**4. Confirm it is using the GPU**
+
+```sh
+curl -s localhost:8880/v1/health      # look for "device":"cuda"
+docker exec tamber nvidia-smi         # the python process appears in the process list
+```
 
 **API only (no web UI):** `docker build --build-arg WEB_STAGE=web-empty -t tamber:api-only .`
 

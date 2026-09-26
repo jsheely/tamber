@@ -125,7 +125,9 @@ docker run -d --name tamber -p 8880:8880 --env-file .env tamber
 - `--build-arg TORCH_VARIANT=cu130` builds a CUDA image (NVIDIA driver >= 580; `cu126` for older
   drivers). torch 2.14.0 is published for `cpu`, `cu126`, `cu130` and `cu132`, not `cu128`;
   channels rotate, so check <https://download.pytorch.org/whl/> when bumping torch. Run it with
-  `--gpus all`.
+  `docker run --gpus all -e TAMBER_DEVICE=cuda ...` (host needs the NVIDIA driver and, on Linux,
+  the NVIDIA Container Toolkit). `TAMBER_DEVICE=cuda` fails fast if no GPU is visible; `auto`
+  would silently fall back to the CPU. The root README has the full GPU walkthrough.
 
 The image installs CPU torch from the PyTorch index, the spaCy English model, and downloads and
 verifies (size + SHA-256) the model and voices into `/opt/tamber/hf` at build time. It then runs
