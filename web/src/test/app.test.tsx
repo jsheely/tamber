@@ -184,6 +184,23 @@ describe('App', () => {
     await user.click(await screen.findByRole('tab', { name: /blend/i }));
     expect(await screen.findByTestId('blend-spec')).toHaveTextContent('af_heart+af_bella');
 
+    // The voice picker is a combo box: opening it clears the search, typing filters at once, and
+    // closing restores the selected label.
+    const first = screen.getByTestId('blend-voice-0') as HTMLInputElement;
+    expect(first.value).toBe('Heart (af_heart)');
+    await user.click(first);
+    expect(first.value).toBe('');
+    await user.type(first, 'bel');
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    const listbox = document.getElementById(first.getAttribute('aria-controls') ?? '')!;
+    await waitFor(() =>
+      expect([...listbox.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual([
+        'Bella (af_bella)',
+      ]),
+    );
+    await user.keyboard('{Escape}');
+    expect(first.value).toBe('Heart (af_heart)');
+
     // Preview fetches the blend's clip (URL-encoded spec) and plays it through the AudioContext.
     await user.click(screen.getByTestId('blend-preview'));
     await waitFor(() =>

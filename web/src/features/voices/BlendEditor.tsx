@@ -7,7 +7,6 @@ import {
   Group,
   Loader,
   Paper,
-  Select,
   Slider,
   Stack,
   Text,
@@ -44,6 +43,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { previewVoice, stopPreview } from '../../player/actions';
 import { useSession } from '../../store/session';
 import { useSettings } from '../../store/settings';
+import { VoiceSelect } from './VoiceSelect';
 import { blendMixLabel, voiceById, voiceSelectData } from './voiceUtils';
 import classes from './VoicePicker.module.css';
 
@@ -318,16 +318,15 @@ export function BlendEditor({ onApplied }: { onApplied?: () => void }) {
       {rows.map((row, i) => (
         <Paper key={i} p="sm" radius="lg" withBorder>
           <Group gap="xs" wrap="nowrap" align="flex-end">
-            <Select
+            <VoiceSelect
               style={{ flex: 1 }}
               label={i === 0 ? 'Voice (sets the language)' : `Voice ${i + 1}`}
               data={data}
               value={row.id}
-              searchable
               allowDeselect={false}
               nothingFoundMessage="No voice"
               onChange={(v) => v && setRow(i, { id: v })}
-              comboboxProps={{ withinPortal: true, zIndex: 1000 }}
+              data-testid={`blend-voice-${i}`}
             />
             <ActionIcon
               size={44}

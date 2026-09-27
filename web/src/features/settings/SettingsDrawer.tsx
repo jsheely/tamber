@@ -6,7 +6,6 @@ import {
   Group,
   PasswordInput,
   SegmentedControl,
-  Select,
   Slider,
   Stack,
   Switch,
@@ -43,6 +42,7 @@ import { formatSpeed } from '../../lib/format';
 import { useSession } from '../../store/session';
 import { useSettings } from '../../store/settings';
 import { ResponsiveDrawer } from '../../ui/ResponsiveDrawer';
+import { VoiceSelect } from '../voices/VoiceSelect';
 import { voiceSelectData } from '../voices/voiceUtils';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -283,15 +283,13 @@ function SettingsBody() {
       <Divider />
 
       <Section title="Voice and playback">
-        <Select
+        <VoiceSelect
           label="Default voice"
           data={voiceData}
           value={settings.voice}
-          searchable
           allowDeselect={false}
           onChange={(v) => v && update({ voice: v })}
           nothingFoundMessage="No voice"
-          comboboxProps={{ withinPortal: true, zIndex: 1000 }}
         />
         <Stack gap={4}>
           <Group justify="space-between">
