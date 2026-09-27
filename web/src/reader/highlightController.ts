@@ -51,9 +51,11 @@ export interface HighlightOptions {
 }
 
 export interface Viewport {
-  /** Visible band of the window in client coordinates (below the header, above the dock). */
+  /** Visible band in client coordinates (the app scroller, or below the header / above the dock). */
   top: number;
   bottom: number;
+  /** The element that scrolls the text; the window when absent. */
+  scroller?: HTMLElement | null;
 }
 
 export const MANUAL_SCROLL_PAUSE_MS = 4000;
@@ -250,7 +252,12 @@ export class HighlightController {
     const lo = vp.top + h / 3;
     const hi = vp.top + (2 * h) / 3;
     if (rect.top >= lo && rect.bottom <= hi) return;
-    const target = window.scrollY + rect.top + rect.height / 2 - (vp.top + h / 2);
-    window.scrollTo({ top: Math.max(0, target), behavior: opts.reducedMotion ? 'auto' : 'smooth' });
+    const behavior: ScrollBehavior = opts.reducedMotion ? 'auto' : 'smooth';
+    const delta = rect.top + rect.height / 2 - (vp.top + h / 2);
+    if (vp.scroller) {
+      vp.scroller.scrollTo({ top: Math.max(0, vp.scroller.scrollTop + delta), behavior });
+    } else {
+      window.scrollTo({ top: Math.max(0, window.scrollY + delta), behavior });
+    }
   }
 }

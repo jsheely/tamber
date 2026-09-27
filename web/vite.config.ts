@@ -1,14 +1,23 @@
+import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { defaultClientConditions, defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 // Explicit .ts extension: this file is typechecked with module "nodenext" (tsconfig.node.json).
 import { pwaIncludeAssets, pwaManifest } from './src/brand/pwa.ts';
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string;
+};
+
 /** Where `pnpm dev:web` proxies /v1 (the Tamber API). Override with TAMBER_API_URL. */
 const apiTarget = process.env.TAMBER_API_URL ?? 'http://localhost:8880';
 
 export default defineConfig({
   base: '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     // @tamber/client exports a "source" condition (packages/client/src/*.ts). Resolving it first
     // means the workspace package is bundled from TypeScript source and hot-reloads in dev.
@@ -17,8 +26,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // 'prompt': a new build waits until the user taps Update (banner / Settings), so the page
+      // is never swapped out mid-read. src/pwa.ts registers the worker and checks for updates.
+      registerType: 'prompt',
+      injectRegister: false,
       manifest: pwaManifest,
       includeAssets: [...pwaIncludeAssets],
       workbox: {

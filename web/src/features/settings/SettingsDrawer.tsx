@@ -28,9 +28,17 @@ import {
   type MotionPreference,
   type ThemePreference,
 } from '@tamber/client';
-import { IconAlertTriangle, IconCheck, IconPlugConnected, IconRestore, IconX } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconCheck,
+  IconPlugConnected,
+  IconRefresh,
+  IconRestore,
+  IconX,
+} from '@tabler/icons-react';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { describeError } from '../../api/errors';
+import { useAppUpdate } from '../../lib/appUpdate';
 import { formatSpeed } from '../../lib/format';
 import { useSession } from '../../store/session';
 import { useSettings } from '../../store/settings';
@@ -85,6 +93,92 @@ function TestResult({ result }: { result: ConnectionTestResult }) {
         {h?.status === 'loading' && row(null, 'The voice model is still loading')}
       </Stack>
     </Alert>
+  );
+}
+
+/** Version, build date and the update controls (the installed app has no reload button). */
+function AppSection() {
+  const needRefresh = useAppUpdate((s) => s.needRefresh);
+  const checking = useAppUpdate((s) => s.checking);
+  const applying = useAppUpdate((s) => s.applying);
+  const lastChecked = useAppUpdate((s) => s.lastChecked);
+  const check = useAppUpdate((s) => s.check);
+  const apply = useAppUpdate((s) => s.apply);
+  const reloadPage = useAppUpdate((s) => s.reload);
+  const built = new Date(__BUILD_TIME__);
+  const builtLabel = Number.isNaN(built.getTime())
+    ? __BUILD_TIME__
+    : built.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+  const onCheck = async () => {
+    const result = await check();
+    if (result === 'update') return; // the button turns into "Update now"
+    if (result === 'unsupported') {
+      notifications.show({
+        id: 'tamber-update',
+        color: 'gray',
+        title: 'Reloading',
+        message: 'Updates are not managed here (no service worker); reloading the page instead.',
+      });
+      reloadPage();
+      return;
+    }
+    notifications.show({
+      id: 'tamber-update',
+      color: result === 'none' ? 'tamber' : 'yellow',
+      title: result === 'none' ? "You're up to date" : 'Could not check for updates',
+      message:
+        result === 'none'
+          ? `Tamber ${__APP_VERSION__}, built ${builtLabel}.`
+          : 'The server could not be reached. Try again later or reload the app.',
+    });
+  };
+
+  return (
+    <Section title="App">
+      <Group justify="space-between" align="center" wrap="nowrap">
+        <div>
+          <Text size="sm" fw={500} data-testid="app-version">
+            Tamber {__APP_VERSION__}
+          </Text>
+          <Text size="xs" c="dimmed">
+            Built {builtLabel}
+            {lastChecked
+              ? ` · checked ${new Date(lastChecked).toLocaleTimeString(undefined, { timeStyle: 'short' })}`
+              : ''}
+          </Text>
+        </div>
+        {needRefresh ? (
+          <Button
+            variant="gradient"
+            leftSection={<IconRefresh size={16} />}
+            loading={applying}
+            onClick={() => void apply()}
+            data-testid="app-update"
+          >
+            Update now
+          </Button>
+        ) : (
+          <Button
+            variant="light"
+            leftSection={<IconRefresh size={16} />}
+            loading={checking}
+            onClick={() => void onCheck()}
+            data-testid="app-check-updates"
+          >
+            Check for updates
+          </Button>
+        )}
+      </Group>
+      <Text size="xs" c="dimmed">
+        The app checks for a new version when it comes back to the foreground and once an hour.
+        If it ever looks stuck,{' '}
+        <Text component="button" type="button" size="xs" c="tamber" td="underline" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }} onClick={reloadPage} data-testid="app-reload">
+          reload the app
+        </Text>
+        .
+      </Text>
+    </Section>
   );
 }
 
@@ -316,6 +410,10 @@ function SettingsBody() {
           />
         </Stack>
       </Section>
+
+      <Divider />
+
+      <AppSection />
 
       <Divider />
 

@@ -14,6 +14,7 @@ import { Header } from './ui/Header';
 import { Orb } from './ui/Orb';
 import { PlayerDock } from './ui/PlayerDock';
 import { TapToResume } from './ui/TapToResume';
+import { UpdateBanner } from './ui/UpdateBanner';
 import classes from './App.module.css';
 
 function MobileIntro() {
@@ -47,7 +48,9 @@ export function App() {
   return (
     <div className={classes.app}>
       <Header />
-      <main className={classes.main}>
+      <UpdateBanner />
+      <div className={classes.scroller} data-app-scroller>
+        <main className={classes.main}>
         <div className={classes.primary}>
           <LayoutGroup>
             <AnimatePresence mode="popLayout" initial={false}>
@@ -76,10 +79,11 @@ export function App() {
             </AnimatePresence>
           </LayoutGroup>
         </div>
-        <aside className={classes.side} aria-label="Voice and playback">
-          <SidePanel />
-        </aside>
-      </main>
+          <aside className={classes.side} aria-label="Voice and playback">
+            <SidePanel />
+          </aside>
+        </main>
+      </div>
       <PlayerDock />
       <TapToResume />
       <Drawers onRetryVoices={refreshHealth} />

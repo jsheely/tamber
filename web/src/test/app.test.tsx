@@ -122,6 +122,12 @@ describe('App', () => {
     expect(screen.getByTestId('composer-stats')).toHaveTextContent('7 words');
     expect(screen.getByTestId('composer-stats')).toHaveTextContent('2 chunks');
     expect(screen.getByTestId('play-button')).toBeInTheDocument();
+    // App-shell scrolling: the composer lives inside the scroller; header and dock stay outside.
+    const scroller = document.querySelector('[data-app-scroller]');
+    expect(scroller).not.toBeNull();
+    expect(scroller!.contains(screen.getByTestId('composer'))).toBe(true);
+    expect(scroller!.contains(document.querySelector('[data-app-header]'))).toBe(false);
+    expect(scroller!.contains(document.querySelector('[data-player-dock]'))).toBe(false);
     await waitFor(() => expect(useSession.getState().connection).toBe('ok'));
     await waitFor(() => expect(useSession.getState().voices).toHaveLength(2));
     expect(fetchMock.mock.calls.map((c) => String(c[0]))).toEqual(

@@ -1,0 +1,16 @@
+.banner {
+  position: relative;
+  flex: none;
+  z-index: 130;
+  padding: 6px 12px;
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  background: linear-gradient(90deg, var(--mantine-color-tamber-6), var(--mantine-color-tamberCyan-6));
+  color: white;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}

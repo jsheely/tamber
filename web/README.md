@@ -93,7 +93,9 @@ Every storage access is wrapped in try/catch (Safari private mode). The theme is
 
 ### PWA
 
-`vite-plugin-pwa` (`registerType: 'autoUpdate'`) with the manifest and icons from `src/brand/pwa.ts`. The service worker precaches the app shell and never handles `/v1/*` (navigate-fallback denylist plus a `NetworkOnly` route), `/docs` or `/openapi.json`. `index.html` carries the `apple-touch-icon` link (iOS ignores manifest icons).
+`vite-plugin-pwa` (`registerType: 'prompt'`) with the manifest and icons from `src/brand/pwa.ts`. The service worker precaches the app shell and never handles `/v1/*` (navigate-fallback denylist plus a `NetworkOnly` route), `/docs` or `/openapi.json`. `index.html` carries the `apple-touch-icon` link (iOS ignores manifest icons).
+
+**Updates.** An installed app has no address bar to reload from, so `src/pwa.ts` registers the worker itself and the `useAppUpdate` store (`src/lib/appUpdate.ts`) drives two controls: a banner under the header ("A new version of Tamber is ready" with Update) as soon as a new worker is waiting, and an **App** section in Settings with the version, build time, "Check for updates" (turns into "Update now") and a plain reload link. The app checks on load, whenever it returns to the foreground or regains focus (throttled to once per 30 s), and hourly. `__APP_VERSION__` and `__BUILD_TIME__` are injected by `vite.config.ts`.
 
 ## Brand icons
 
@@ -120,7 +122,8 @@ The icons come from `../assets/brand`, which is the source of truth and is never
 - **Interruptions.** Locking the phone, a call or another app can suspend or interrupt the context. The app shows "Tap to resume audio" instead of retrying in the background.
 - **Lock screen.** MediaSession metadata (title, "Tamber", voice, `/icon-512.png`) and play/pause/previous/next/seek handlers drive the player.
 - **Install.** Use Safari's Share > Add to Home Screen over HTTPS; the status bar is `black-translucent`, so the layout pads with `env(safe-area-inset-*)`.
-- Inputs use at least 16 px text so iOS does not zoom on focus; tap targets are at least 44 px.
+- **App-shell scrolling.** The document never scrolls (`html, body { overflow: hidden }`). `.app` is fixed to the viewport with the header, the update banner, one scroller (`[data-app-scroller]`, `overscroll-behavior: contain`) and the player dock as flex rows, so the header and dock stay docked through rubber-banding and momentum scrolls. The reader's auto-scroll targets that scroller (`Viewport.scroller` in `highlightController.ts`).
+- **No zoom.** The viewport meta sets `maximum-scale=1` (Safari still lets people pinch, but it stops the focus auto-zoom that otherwise leaves the page zoomed in), `touch-action: manipulation` removes double-tap zoom, and on coarse pointers every input renders at 16 px or larger. Tap targets are at least 44 px.
 
 ## Keyboard (desktop)
 

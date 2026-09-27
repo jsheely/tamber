@@ -34,6 +34,7 @@
     ]
   },
   "include": [
-    "src/test"
+    "src/test",
+    "src/vite-env.d.ts"
   ]
 }

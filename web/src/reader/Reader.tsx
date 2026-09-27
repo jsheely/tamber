@@ -32,11 +32,18 @@ export interface ReaderProps {
 }
 
 function defaultViewport(): Viewport {
+  // The app shell scrolls in its own element between the header and the dock (App.module.css).
+  const scroller = document.querySelector<HTMLElement>('[data-app-scroller]');
+  if (scroller) {
+    const r = scroller.getBoundingClientRect();
+    return { top: r.top, bottom: r.bottom, scroller };
+  }
   const header = document.querySelector('[data-app-header]')?.getBoundingClientRect();
   const dock = document.querySelector('[data-player-dock]')?.getBoundingClientRect();
   return {
     top: header ? Math.max(0, header.bottom) : 0,
     bottom: dock && dock.top > 0 ? dock.top : window.innerHeight,
+    scroller: null,
   };
 }
 

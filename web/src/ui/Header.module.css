@@ -1,6 +1,6 @@
 .header {
-  position: sticky;
-  top: 0;
+  position: relative;
+  flex: none;
   z-index: 140;
   padding: var(--tamber-safe-top) calc(8px + var(--tamber-safe-right)) 0 calc(12px + var(--tamber-safe-left));
   background: var(--tamber-dock-bg);

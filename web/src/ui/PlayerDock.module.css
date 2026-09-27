@@ -1,8 +1,6 @@
 .dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  flex: none;
   z-index: 150;
   padding: 0 calc(12px + var(--tamber-safe-right)) calc(10px + var(--tamber-safe-bottom))
     calc(12px + var(--tamber-safe-left));

@@ -77,7 +77,7 @@ Contract types, `TamberClient` (NDJSON streaming, extract, previews, test connec
 - **Player:** `ChunkedPlayer` (decodeAudioData, gapless scheduling on the AudioContext clock), a synchronous iOS unlock, backpressure on long texts (at most 10 minutes buffered ahead), and stall timeouts.
 - **Reader:** a karaoke reader (one spring-animated pill, sentence wash, tap-to-seek, auto-scroll).
 - **Screens:** composer and import (URL and files), voice drawer with previews and a blend editor, and settings.
-- **Visuals and platform:** orb, waveform and progress visuals; MediaSession; PWA.
+- **Visuals and platform:** orb, waveform and progress visuals; MediaSession; PWA with prompt-style updates (banner + Settings > App > Check for updates; checks on foreground and hourly).
 - **Persistence:** settings, draft and history are kept across reloads.
 
 **Verified** in headless Chrome with iPhone-sized emulation and real taps against the API, with and without a key (see the verifier's harness).

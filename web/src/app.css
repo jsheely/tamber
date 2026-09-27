@@ -9,11 +9,24 @@
   --tamber-safe-right: env(safe-area-inset-right, 0px);
 }
 
+/*
+ * App-shell scrolling. The document itself never scrolls: the shell (.app in App.module.css) is
+ * fixed to the viewport with the header and player dock as flex rows and one inner scroller in
+ * between. On iOS this keeps the header and dock docked during rubber-band overscroll and momentum
+ * scrolling, where sticky/fixed elements otherwise drift, and stops the page shifting under the
+ * black-translucent status bar. `touch-action: manipulation` removes the double-tap zoom.
+ */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-padding-top: calc(var(--tamber-header-h) + var(--tamber-safe-top) + 16px);
-  scroll-padding-bottom: calc(var(--tamber-dock-h) + var(--tamber-safe-bottom) + 16px);
 }
 
 [data-mantine-color-scheme='dark'] body {
@@ -21,10 +34,18 @@ html {
 }
 
 body {
-  min-height: 100dvh;
-  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS Safari zooms the page when a focused input's text is under 16px and does not zoom back. */
+@media (pointer: coarse) {
+  .mantine-Input-input,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: max(16px, var(--input-fz, 16px));
+  }
 }
 
 /* Soft brand ambience behind everything (static: no animation cost). */
