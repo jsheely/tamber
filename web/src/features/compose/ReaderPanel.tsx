@@ -1,9 +1,9 @@
 import { Badge, Button, Group, Stack, Switch, Text, Title, Tooltip } from '@mantine/core';
-import { IconPencil } from '@tabler/icons-react';
+import { IconPencil, IconPlus } from '@tabler/icons-react';
 import { motion } from 'motion/react';
 import { useCallback } from 'react';
 import { useReducedMotionPref } from '../../lib/motion';
-import { seekFromReader } from '../../player/actions';
+import { seekFromReader, startNew } from '../../player/actions';
 import { mediaTitle } from '../../player/mediaSession';
 import { getPlayer } from '../../player/instance';
 import { usePlayerSnapshot } from '../../player/usePlayer';
@@ -47,18 +47,34 @@ export function ReaderPanel() {
               {mediaTitle(snap)}
             </Title>
           </div>
-          <Button
-            variant="light"
-            size="compact-md"
-            h={40}
-            leftSection={<IconPencil size={16} />}
-            onClick={() => {
-              if (snap.status === 'playing' || snap.status === 'loading') player.pause();
-              setView('compose');
-            }}
-          >
-            Edit
-          </Button>
+          <Group gap={4} wrap="nowrap">
+            <Tooltip label="Edit this text">
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-md"
+                h={40}
+                px={10}
+                aria-label="Edit this text"
+                onClick={() => {
+                  if (snap.status === 'playing' || snap.status === 'loading') player.pause();
+                  setView('compose');
+                }}
+              >
+                <IconPencil size={18} />
+              </Button>
+            </Tooltip>
+            <Button
+              variant="light"
+              size="compact-md"
+              h={40}
+              leftSection={<IconPlus size={16} />}
+              onClick={startNew}
+              data-testid="reader-new"
+            >
+              New
+            </Button>
+          </Group>
         </Group>
         <Group gap="xs" wrap="wrap" justify="space-between">
           <Group gap={6}>

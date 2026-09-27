@@ -1,11 +1,13 @@
 import { planChunks, type WordTiming } from '@tamber/client';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReaderPanel } from '../features/compose/ReaderPanel';
 import { ChunkedPlayer } from '../player/ChunkedPlayer';
 import { setPlayer } from '../player/instance';
 import { noopAnchor } from '../player/silentAnchor';
 import { Providers } from '../Providers';
+import { useDraft } from '../store/draft';
+import { useSession } from '../store/session';
 import { buildBlocks } from '../reader/blocks';
 import { Reader } from '../reader/Reader';
 import type { FrameSource } from '../reader/highlightController';
@@ -136,5 +138,40 @@ describe('ReaderPanel degraded mode', () => {
     expect(screen.getByTestId('degraded-badge')).toBeInTheDocument();
     expect(screen.getByTestId('reader')).toHaveAttribute('data-mode', 'chunk');
     expect(screen.getByTestId('reader').textContent).toBe(text);
+  });
+});
+
+describe('ReaderPanel "New"', () => {
+  afterEach(() => {
+    setPlayer(null);
+    useDraft.getState().clear();
+    useSession.getState().setView('compose');
+  });
+
+  it('forgets the session, clears the draft and returns to the composer', async () => {
+    const ctx = new FakeAudioContext();
+    const player = new ChunkedPlayer({ createContext: () => ctx.asAudioContext(), anchor: noopAnchor });
+    setPlayer(player);
+    const net = createFakeFetch();
+    const text = 'Read me once, then start over.';
+    useDraft.getState().setText(text);
+    useSession.getState().setView('read');
+    player.unlock();
+    player.play(
+      { text, voice: 'af_heart', speed: 1, format: 'wav', chunkMode: 'sentence', lang: null },
+      { client: net.client },
+    );
+    await vi.waitFor(() => expect(player.getSnapshot().hasSession).toBe(true));
+
+    render(
+      <Providers>
+        <ReaderPanel />
+      </Providers>,
+    );
+    fireEvent.click(screen.getByTestId('reader-new'));
+
+    expect(player.getSnapshot().hasSession).toBe(false);
+    expect(useDraft.getState().text).toBe('');
+    expect(useSession.getState().view).toBe('compose');
   });
 });

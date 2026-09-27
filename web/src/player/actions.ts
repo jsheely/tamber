@@ -96,6 +96,16 @@ export function stopPlayback(): void {
   getPlayer().stop();
 }
 
+/**
+ * "New" in the reader: forget the current session, clear the draft and return to an empty
+ * composer. The text is already in history (recorded when playback started).
+ */
+export function startNew(): void {
+  getPlayer().reset();
+  useDraft.getState().clear();
+  useSession.getState().setView('compose');
+}
+
 /** "Tap to resume" after an iOS interruption. */
 export function resumeFromGesture(): void {
   getPlayer().resume();
