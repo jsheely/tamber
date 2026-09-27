@@ -6,6 +6,7 @@ const VoiceDrawer = lazy(() => import('./voices/VoiceDrawer'));
 const SettingsDrawer = lazy(() => import('./settings/SettingsDrawer'));
 const ImportDrawer = lazy(() => import('./import/ImportDrawer'));
 const HistoryDrawer = lazy(() => import('./history/HistoryDrawer'));
+const PanelDrawer = lazy(() => import('./compose/PanelDrawer'));
 
 /** Mounts each drawer the first time it is opened, then keeps it for its close transition. */
 export function Drawers({ onRetryVoices }: { onRetryVoices: () => void }) {
@@ -22,6 +23,7 @@ export function Drawers({ onRetryVoices }: { onRetryVoices: () => void }) {
       {show('settings') && <SettingsDrawer />}
       {show('import') && <ImportDrawer />}
       {show('history') && <HistoryDrawer />}
+      {show('panel') && <PanelDrawer />}
     </Suspense>
   );
 }

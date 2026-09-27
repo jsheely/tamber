@@ -58,7 +58,7 @@ src/
   player/           ChunkedPlayer.ts (framework-free), unlock.ts, decode.ts, silentAnchor.ts,
                     mediaSession.ts, actions.ts (gesture handlers), usePlayer.ts, usePlayerBindings.ts
   reader/           Reader.tsx, highlightController.ts (DOM/ref driven), blocks.ts
-  features/         compose (Composer, ReaderPanel, SidePanel), voices (VoicePicker, BlendEditor,
+  features/         compose (Composer, ReaderPanel, SidePanel, PanelDrawer: the side panel as a phone sheet), voices (VoicePicker, BlendEditor,
                     VoiceDrawer), import (URL + Dropzone), settings, history, Drawers.tsx (lazy)
   ui/               Header, PlayerDock, PlayButton, Orb, Waveform, ProgressSegments, TimeReadout,
                     TapToResume, ResponsiveDrawer

@@ -24,6 +24,27 @@
   border-radius: var(--mantine-radius-md);
 }
 
+.voice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.voice:focus-visible {
+  outline: 2px solid var(--mantine-color-tamber-4);
+  outline-offset: 2px;
+}
+
+/* The desktop side column already shows the voice. */
+@media (min-width: $mantine-breakpoint-md) {
+  .mobileOnly {
+    display: none;
+  }
+}
+
 .dot {
   display: block;
   width: 10px;

@@ -1,5 +1,5 @@
 import { SETTINGS_STORAGE_KEY, type HealthResponse, type VoicesResponse } from '@tamber/client';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
@@ -122,6 +122,9 @@ describe('App', () => {
     expect(screen.getByTestId('composer-stats')).toHaveTextContent('7 words');
     expect(screen.getByTestId('composer-stats')).toHaveTextContent('2 chunks');
     expect(screen.getByTestId('play-button')).toBeInTheDocument();
+    // The composer is the first thing in the scroller on phones; the voice lives in the header
+    // button (avatar with the voice's initial) which opens the voice-and-playback sheet.
+    expect(screen.getByTestId('header-voice')).toHaveTextContent('H');
     // App-shell scrolling: the composer lives inside the scroller; header and dock stay outside.
     const scroller = document.querySelector('[data-app-scroller]');
     expect(scroller).not.toBeNull();
@@ -133,6 +136,20 @@ describe('App', () => {
     expect(fetchMock.mock.calls.map((c) => String(c[0]))).toEqual(
       expect.arrayContaining(['/v1/health', '/v1/voices']),
     );
+  });
+
+  it('header voice button opens the voice-and-playback sheet on phones', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    renderApp();
+    await waitFor(() => expect(useSession.getState().voices).toHaveLength(2));
+    await user.click(screen.getByTestId('header-voice'));
+    expect(useSession.getState().drawer).toBe('panel');
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Voice and playback');
+    // Its voice card leads on to the voice picker.
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByTestId('voice-summary'));
+    expect(useSession.getState().drawer).toBe('voices');
   });
 
   it('opens settings with the key focused when the server requires a key', async () => {

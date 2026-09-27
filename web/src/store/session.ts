@@ -2,7 +2,8 @@ import type { HealthResponse, Voice, VoicesResponse } from '@tamber/client';
 import { create } from 'zustand';
 
 export type ConnectionState = 'unknown' | 'checking' | 'ok' | 'loading' | 'auth' | 'error';
-export type DrawerName = 'voices' | 'settings' | 'import' | 'history';
+/** `panel` is the phone version of the desktop side column (voice + quick playback settings). */
+export type DrawerName = 'voices' | 'settings' | 'import' | 'history' | 'panel';
 export type ViewMode = 'compose' | 'read';
 export type VoiceTab = 'voices' | 'blend';
 

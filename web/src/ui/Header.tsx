@@ -1,6 +1,8 @@
-import { ActionIcon, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconHistory, IconSettings } from '@tabler/icons-react';
+import { describeVoice } from '../features/voices/voiceUtils';
 import { useSession, type ConnectionState } from '../store/session';
+import { useSettings } from '../store/settings';
 import classes from './Header.module.css';
 
 const CONNECTION_LABEL: Record<ConnectionState, string> = {
@@ -34,7 +36,32 @@ function ConnectionDot() {
   );
 }
 
-/** Sticky app header: brand mark + wordmark, connection state, history and settings. */
+/** Phones only: the current voice as an avatar; opens the voice-and-playback sheet. */
+function VoiceButton() {
+  const voice = useSettings((s) => s.voice);
+  const savedBlends = useSettings((s) => s.savedBlends);
+  const voices = useSession((s) => s.voices);
+  const openDrawer = useSession((s) => s.openDrawer);
+  const d = describeVoice(voice, voices, savedBlends);
+  return (
+    <Tooltip label={`Voice: ${d.title}`}>
+      <UnstyledButton
+        className={`${classes.voice} ${classes.mobileOnly}`}
+        onClick={() => openDrawer('panel')}
+        aria-label={`Voice: ${d.title}. Voice and playback`}
+        data-testid="header-voice"
+      >
+        <Avatar radius="xl" size={32} variant="gradient" gradient={{ from: 'tamber.5', to: 'tamberCyan.4', deg: 62 }}>
+          <Text span fz={13} fw={700}>
+            {d.initials}
+          </Text>
+        </Avatar>
+      </UnstyledButton>
+    </Tooltip>
+  );
+}
+
+/** App header: brand mark + wordmark, connection state, voice (phones), history and settings. */
 export function Header() {
   const openDrawer = useSession((s) => s.openDrawer);
   const setView = useSession((s) => s.setView);
@@ -53,6 +80,7 @@ export function Header() {
         </UnstyledButton>
         <Group gap={2} wrap="nowrap">
           <ConnectionDot />
+          <VoiceButton />
           <Tooltip label="Recent texts">
             <ActionIcon
               size={44}

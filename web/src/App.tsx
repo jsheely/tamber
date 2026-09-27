@@ -1,4 +1,3 @@
-import { Stack, Text } from '@mantine/core';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useHealth } from './api/useHealth';
 import { useVoices } from './api/useVoices';
@@ -6,35 +5,14 @@ import { Composer } from './features/compose/Composer';
 import { ReaderPanel } from './features/compose/ReaderPanel';
 import { SidePanel } from './features/compose/SidePanel';
 import { Drawers } from './features/Drawers';
-import { VoiceSummary } from './features/voices/VoiceSummary';
 import { usePlayerBindings, usePlayerHotkeys } from './player/usePlayerBindings';
 import { usePlayerState } from './player/usePlayer';
 import { useSession } from './store/session';
 import { Header } from './ui/Header';
-import { Orb } from './ui/Orb';
 import { PlayerDock } from './ui/PlayerDock';
 import { TapToResume } from './ui/TapToResume';
 import { UpdateBanner } from './ui/UpdateBanner';
 import classes from './App.module.css';
-
-function MobileIntro() {
-  return (
-    <motion.div
-      className={classes.mobileIntro}
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-    >
-      <Stack align="center" gap={0}>
-        <Orb size={132} />
-        <Text size="sm" c="dimmed" ta="center" mt={-6}>
-          Your own voice for anything you want to hear.
-        </Text>
-      </Stack>
-      <VoiceSummary />
-    </motion.div>
-  );
-}
 
 export function App() {
   const refreshHealth = useHealth();
@@ -72,7 +50,6 @@ export function App() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <MobileIntro />
                   <Composer />
                 </motion.div>
               )}
