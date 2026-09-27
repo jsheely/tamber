@@ -70,6 +70,8 @@ hf-cache/
 api/models/
 api/.hf/
 api/static/
+# API runtime state (active model, custom voices); never commit
+api/data/
 
 # ---------- Env / secrets ----------
 .env
