@@ -1,10 +1,7 @@
-import { Group, SegmentedControl, Slider, Stack, Switch, Text, UnstyledButton } from '@mantine/core';
+import { Group, SegmentedControl, Slider, Stack, Switch, Text } from '@mantine/core';
 import { SPEED_MAX, SPEED_MIN, SPEED_STEP, type AudioFormat } from '@tamber/client';
 import { formatSpeed } from '../../lib/format';
 import { usePlayerState } from '../../player/usePlayer';
-import { useDraft } from '../../store/draft';
-import { useHistory } from '../../store/history';
-import { useSession } from '../../store/session';
 import { useSettings } from '../../store/settings';
 import { Orb } from '../../ui/Orb';
 import { VoiceSummary } from '../voices/VoiceSummary';
@@ -18,7 +15,7 @@ const STATUS_LINE: Record<string, string> = {
   error: 'Stopped',
 };
 
-/** Desktop side column: the big orb, voice, quick playback settings and recent texts. */
+/** Desktop side column (and the phone sheet): the big orb, voice and quick playback settings. */
 export function SidePanel() {
   const status = usePlayerState((s) => s.status);
   const speed = useSettings((s) => s.speed);
@@ -26,10 +23,6 @@ export function SidePanel() {
   const highlight = useSettings((s) => s.highlight);
   const autoScroll = useSettings((s) => s.autoScroll);
   const update = useSettings((s) => s.update);
-  const recent = useHistory((s) => s.entries);
-  const setText = useDraft((s) => s.setText);
-  const setView = useSession((s) => s.setView);
-  const openDrawer = useSession((s) => s.openDrawer);
 
   return (
     <Stack gap="lg">
@@ -83,35 +76,6 @@ export function SidePanel() {
           onChange={(e) => update({ autoScroll: e.currentTarget.checked })}
         />
       </Stack>
-      {recent.length > 0 && (
-        <Stack gap={4}>
-          <Group justify="space-between">
-            <Text size="xs" tt="uppercase" fw={700} c="dimmed" lts={0.6}>
-              Recent
-            </Text>
-            <UnstyledButton onClick={() => openDrawer('history')}>
-              <Text size="xs" c="tamber.4">
-                See all
-              </Text>
-            </UnstyledButton>
-          </Group>
-          {recent.slice(0, 4).map((e) => (
-            <UnstyledButton
-              key={e.id}
-              onClick={() => {
-                setText(e.text);
-                setView('compose');
-              }}
-              style={{ padding: '8px 10px', borderRadius: 'var(--mantine-radius-md)', minHeight: 44 }}
-              className="tamber-surface"
-            >
-              <Text size="sm" truncate>
-                {e.title}
-              </Text>
-            </UnstyledButton>
-          ))}
-        </Stack>
-      )}
     </Stack>
   );
 }
