@@ -4,6 +4,7 @@ import { formatSpeed } from '../../lib/format';
 import { usePlayerState } from '../../player/usePlayer';
 import { useSettings } from '../../store/settings';
 import { Orb } from '../../ui/Orb';
+import { SpeedPresets } from '../../ui/SpeedPresets';
 import { VoiceSummary } from '../voices/VoiceSummary';
 
 const STATUS_LINE: Record<string, string> = {
@@ -47,7 +48,9 @@ export function SidePanel() {
           value={speed}
           onChange={(v) => update({ speed: v })}
           label={formatSpeed}
+          mb="xs"
         />
+        <SpeedPresets />
       </Stack>
     </Stack>
   );

@@ -138,6 +138,18 @@ describe('App', () => {
     );
   });
 
+  it('speed presets jump the speed in one tap', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    renderApp();
+    await user.click(screen.getByTestId('header-voice'));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByTestId('speed-preset-1.5'));
+    expect(getSettings().speed).toBe(1.5);
+    expect(within(dialog).getByTestId('speed-preset-1.5')).toHaveAttribute('aria-pressed', 'true');
+    expect(within(dialog).getByTestId('speed-preset-1')).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('header voice button opens the voice-and-playback sheet on phones', async () => {
     mockServer();
     const user = userEvent.setup();

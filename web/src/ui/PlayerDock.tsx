@@ -16,6 +16,7 @@ import { useSettings } from '../store/settings';
 import classes from './PlayerDock.module.css';
 import { PlayButton } from './PlayButton';
 import { ProgressSegments } from './ProgressSegments';
+import { SpeedPresets } from './SpeedPresets';
 import { TimeReadout } from './TimeReadout';
 import { Waveform } from './Waveform';
 
@@ -69,7 +70,9 @@ function SpeedControl() {
             onChange={(v) => update({ speed: v })}
             marks={marks}
             label={formatSpeed}
+            mb="md"
           />
+          <SpeedPresets />
         </Stack>
       </Popover.Dropdown>
     </Popover>
