@@ -150,6 +150,29 @@ phone / laptop / extension ──HTTPS──▶ NetBird reverse proxy (https://t
 4. **Keep streaming unbuffered.** For `/v1/tts`, turn proxy buffering off, don't compress `application/x-ndjson`, and allow a read/idle timeout of at least 60 s (the server pings every 15 s). Allow request bodies of at least `TAMBER_MAX_UPLOAD_MB` (25 MB by default) for document uploads, and pass `X-Forwarded-For` / `X-Forwarded-Proto`.
 5. **Check it.** `curl -N -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{"text":"One. Two. Three. Four."}' https://tts.example.com/v1/tts | cut -c1-120`. Lines must arrive one by one, not all at the end. This has not yet been checked against a real NetBird proxy (see [docs/STATUS.md](docs/STATUS.md)).
 
+## Auto-deploy on push (single Docker host)
+
+The deploy host does not need to be reachable from GitHub: a systemd user timer on it polls `origin/main` every minute and, when the branch moved, rebuilds the image and swaps the container (the old one keeps serving until the new image is built). Everything lives in [`deploy/`](deploy/).
+
+```sh
+git clone git@github.com:jsheely/tamber && cd tamber
+cp .env.example .env && $EDITOR .env         # the installer copies this into the deploy clone
+./deploy/install.sh                          # CPU service; TAMBER_DEPLOY_SERVICE=tamber-gpu ./deploy/install.sh for CUDA
+```
+
+The installer clones the repo into `~/deploy/tamber` (that clone is reset to `origin/main` on every deploy, so never edit it), installs `~/.local/bin/tamber-autodeploy` with `tamber-autodeploy.timer`, writes `~/.config/tamber-autodeploy.env` and enables lingering so the timer runs without a login session. The first run deploys right away. Then, from any machine, `git push origin main` is the deploy.
+
+| | |
+|---|---|
+| Follow a deploy | `journalctl --user -u tamber-autodeploy -f` |
+| Timer state | `systemctl --user list-timers tamber-autodeploy.timer` |
+| Deploy now / redeploy the same commit | `systemctl --user start tamber-autodeploy.service` / `FORCE=1 tamber-autodeploy` |
+| Switch CPU ↔ GPU, branch or directory | edit `~/.config/tamber-autodeploy.env`; the next deploy applies it |
+| Change server config | edit `~/deploy/tamber/.env`, then `FORCE=1 tamber-autodeploy` |
+| Stop auto-deploying | `systemctl --user disable --now tamber-autodeploy.timer` |
+
+A failed build leaves the running container untouched and the failure in the journal; the next push retries.
+
 ## Pointing each client at the server
 
 | Client | Where | Server URL | API key |

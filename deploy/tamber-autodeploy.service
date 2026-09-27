@@ -1,0 +1,11 @@
+[Unit]
+Description=Tamber: rebuild and redeploy when origin/main changes
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.config/tamber-autodeploy.env
+ExecStart=%h/.local/bin/tamber-autodeploy
+# Building the image can legitimately take a long time.
+TimeoutStartSec=3h

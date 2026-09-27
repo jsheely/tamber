@@ -1,0 +1,11 @@
+[Unit]
+Description=Tamber: poll origin/main every minute
+
+[Timer]
+OnBootSec=2min
+# Runs again 60 s after the previous run finished, so runs never overlap.
+OnUnitInactiveSec=60s
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
