@@ -19,10 +19,18 @@ import {
   wavHeader,
   parseWav,
   langOfVoiceId,
+  saveBlend,
+  removeSavedBlend,
+  findSavedBlend,
+  MAX_SAVED_BLENDS,
 } from '../dist/index.js';
 
 test('migrateSettings returns defaults for garbage and validates fields', () => {
-  assert.deepEqual(migrateSettings(null), { ...DEFAULT_SETTINGS, favoriteVoices: [] });
+  assert.deepEqual(migrateSettings(null), {
+    ...DEFAULT_SETTINGS,
+    favoriteVoices: [],
+    savedBlends: [],
+  });
   const m = migrateSettings({
     version: 0,
     baseUrl: 'tts.example.com/v1/',
@@ -32,6 +40,14 @@ test('migrateSettings returns defaults for garbage and validates fields', () => 
     voice: 'nope!',
     lang: 'x',
     favoriteVoices: ['af_heart', 'af_heart', 'bad voice'],
+    savedBlends: [
+      { name: '  Warm  duet ', spec: 'af_heart(2) + af_bella(1)' },
+      { name: 'warm duet', spec: 'af_sky+af_bella' }, // duplicate name (case-insensitive)
+      { name: 'Solo', spec: 'af_heart' }, // not a blend
+      { name: '', spec: 'af_heart+af_sky' }, // no name
+      { name: 'Broken', spec: 'af_heart+' },
+      'garbage',
+    ],
     extra: 1,
   });
   assert.equal(m.apiBaseUrl, 'https://tts.example.com');
@@ -41,9 +57,42 @@ test('migrateSettings returns defaults for garbage and validates fields', () => 
   assert.equal(m.voice, 'af_heart');
   assert.equal(m.lang, null);
   assert.deepEqual(m.favoriteVoices, ['af_heart']);
+  assert.deepEqual(m.savedBlends, [{ name: 'Warm duet', spec: 'af_heart(2)+af_bella(1)' }]);
   assert.equal('extra' in m, false);
   assert.equal(updateSettings(m, { voice: 'af_bella(2)+af_sky' }).voice, 'af_bella(2)+af_sky');
   assert.deepEqual(Object.keys(splitSecrets(m).secrets), ['apiKey']);
+});
+
+test('saved blends: save replaces by name or spec, remove, find', () => {
+  let list = saveBlend([], { name: 'Duet', spec: 'af_heart(2)+af_bella(1)' });
+  assert.deepEqual(list, [{ name: 'Duet', spec: 'af_heart(2)+af_bella(1)' }]);
+  // Same spec under a new name replaces the old entry.
+  list = saveBlend(list, { name: 'Warm', spec: 'af_heart(2)+af_bella(1)' });
+  assert.deepEqual(list, [{ name: 'Warm', spec: 'af_heart(2)+af_bella(1)' }]);
+  // Same name with a new spec updates it; a new blend goes first.
+  list = saveBlend(list, { name: 'warm', spec: 'af_sky+af_bella' });
+  list = saveBlend(list, { name: 'Trio', spec: 'af_heart+af_sky+af_bella' });
+  assert.deepEqual(list, [
+    { name: 'Trio', spec: 'af_heart+af_sky+af_bella' },
+    { name: 'warm', spec: 'af_sky+af_bella' },
+  ]);
+  assert.equal(findSavedBlend(list, 'af_bella(1)+af_sky(1)'), undefined); // order matters
+  assert.deepEqual(findSavedBlend(list, 'af_sky(1)+af_bella(1)'), {
+    name: 'warm',
+    spec: 'af_sky+af_bella',
+  });
+  assert.equal(findSavedBlend(list, 'af_heart'), undefined);
+  // Single voices and empty names are ignored; invalid specs throw.
+  assert.deepEqual(saveBlend(list, { name: 'Solo', spec: 'af_heart' }), list);
+  assert.deepEqual(saveBlend(list, { name: '   ', spec: 'af_heart+af_sky' }), list);
+  assert.throws(() => saveBlend(list, { name: 'Bad', spec: 'af_heart+' }));
+  assert.deepEqual(removeSavedBlend(list, 'WARM'), [list[0]]);
+  let many = [];
+  for (let i = 0; i < MAX_SAVED_BLENDS + 3; i++) {
+    many = saveBlend(many, { name: 'Blend ' + i, spec: 'af_heart(' + (i + 1) + ')+af_sky' });
+  }
+  assert.equal(many.length, MAX_SAVED_BLENDS);
+  assert.equal(migrateSettings({ savedBlends: many }).savedBlends.length, MAX_SAVED_BLENDS);
 });
 
 test('normalizeBaseUrl', () => {

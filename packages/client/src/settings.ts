@@ -7,13 +7,21 @@
  */
 import { isLangCode } from './languages.ts';
 import type { AudioFormat, ChunkMode, LangCode } from './types.ts';
-import { VOICE_ID_PATTERN, parseVoiceSpec } from './voice-spec.ts';
+import { VOICE_ID_PATTERN, canonicalVoiceSpec, isBlend, parseVoiceSpec } from './voice-spec.ts';
 
 export const SETTINGS_VERSION = 1 as const;
 /** Storage key used by every client (localStorage key, chrome.storage key, MMKV key). */
 export const SETTINGS_STORAGE_KEY = 'tamber.settings';
 /** Settings that are secrets: never synced/exported; store them in the most private storage available. */
 export const SECRET_SETTING_KEYS = ['apiKey'] as const;
+
+/** A named voice blend the user built and kept (docs/ARCHITECTURE.md section 7). */
+export interface SavedBlend {
+  /** Display name, unique (case-insensitive) within the list, at most MAX_BLEND_NAME_CHARS. */
+  name: string;
+  /** Canonical blend spec (two or more voices), e.g. `af_heart(2)+af_bella(1)`. */
+  spec: string;
+}
 
 export type ThemePreference = 'auto' | 'light' | 'dark';
 export type MotionPreference = 'system' | 'full' | 'reduced';
@@ -48,12 +56,16 @@ export interface TamberSettings {
   volume: number;
   /** Pinned voice ids / blend specs, most recent first, max MAX_FAVORITE_VOICES. */
   favoriteVoices: string[];
+  /** Named blends, most recently saved first, max MAX_SAVED_BLENDS. */
+  savedBlends: SavedBlend[];
 }
 
 export const SPEED_MIN = 0.5;
 export const SPEED_MAX = 2.0;
 export const SPEED_STEP = 0.05;
 export const MAX_FAVORITE_VOICES = 24;
+export const MAX_SAVED_BLENDS = 24;
+export const MAX_BLEND_NAME_CHARS = 40;
 export const DEFAULT_VOICE = 'af_heart';
 
 export const DEFAULT_SETTINGS: Readonly<TamberSettings> = Object.freeze({
@@ -71,11 +83,12 @@ export const DEFAULT_SETTINGS: Readonly<TamberSettings> = Object.freeze({
   motion: 'system',
   volume: 1,
   favoriteVoices: Object.freeze([]) as unknown as string[],
+  savedBlends: Object.freeze([]) as unknown as SavedBlend[],
 } satisfies TamberSettings);
 
 /** A fresh, mutable copy of the defaults. */
 export function createDefaultSettings(): TamberSettings {
-  return { ...DEFAULT_SETTINGS, favoriteVoices: [] };
+  return { ...DEFAULT_SETTINGS, favoriteVoices: [], savedBlends: [] };
 }
 
 /**
@@ -120,6 +133,42 @@ function isValidVoice(v: unknown): v is string {
   } catch {
     return false;
   }
+}
+
+/** Trim, collapse whitespace and bound a blend name; '' when unusable. */
+export function normalizeBlendName(name: unknown): string {
+  return typeof name === 'string'
+    ? name.replace(/\s+/g, ' ').trim().slice(0, MAX_BLEND_NAME_CHARS)
+    : '';
+}
+
+/** A valid SavedBlend (canonical spec, two or more voices, non-empty name) or null. */
+function sanitizeSavedBlend(raw: unknown): SavedBlend | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const name = normalizeBlendName(r.name);
+  if (!name || typeof r.spec !== 'string') return null;
+  try {
+    const spec = canonicalVoiceSpec(r.spec, 16);
+    return isBlend(spec) ? { name, spec } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Validate a list of saved blends: drop invalid entries and duplicate names, keep order, bound. */
+export function sanitizeSavedBlends(raw: unknown): SavedBlend[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SavedBlend[] = [];
+  const names = new Set<string>();
+  for (const item of raw) {
+    const b = sanitizeSavedBlend(item);
+    if (!b || names.has(b.name.toLowerCase())) continue;
+    names.add(b.name.toLowerCase());
+    out.push(b);
+    if (out.length >= MAX_SAVED_BLENDS) break;
+  }
+  return out;
 }
 
 function pick<T>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -172,6 +221,7 @@ export function migrateSettings(persisted: unknown, fromVersion?: number): Tambe
           MAX_FAVORITE_VOICES,
         )
       : d.favoriteVoices,
+    savedBlends: sanitizeSavedBlends(p.savedBlends),
   };
   return out;
 }
@@ -198,6 +248,44 @@ export function toggleFavoriteVoice(list: readonly string[], voice: string): str
   const v = voice.trim();
   if (list.includes(v)) return list.filter((x) => x !== v);
   return [v, ...list].slice(0, MAX_FAVORITE_VOICES);
+}
+
+/**
+ * Add or replace a saved blend (most recent first, bounded). An entry with the same name
+ * (case-insensitive) or the same spec is replaced, so re-saving never creates duplicates.
+ * Throws VoiceSpecError for an invalid spec; returns a copy of the list unchanged for an empty
+ * name or a single voice.
+ */
+export function saveBlend(
+  list: readonly SavedBlend[],
+  blend: { name: string; spec: string },
+): SavedBlend[] {
+  const name = normalizeBlendName(blend.name);
+  const spec = canonicalVoiceSpec(blend.spec, 16);
+  if (!name || !isBlend(spec)) return [...list];
+  const lower = name.toLowerCase();
+  const rest = list.filter((b) => b.name.toLowerCase() !== lower && b.spec !== spec);
+  return [{ name, spec }, ...rest].slice(0, MAX_SAVED_BLENDS);
+}
+
+/** Remove the saved blend with this name (case-insensitive). */
+export function removeSavedBlend(list: readonly SavedBlend[], name: string): SavedBlend[] {
+  const lower = normalizeBlendName(name).toLowerCase();
+  return list.filter((b) => b.name.toLowerCase() !== lower);
+}
+
+/** The saved blend whose spec matches `voice` (canonicalised), if any. */
+export function findSavedBlend(
+  list: readonly SavedBlend[],
+  voice: string,
+): SavedBlend | undefined {
+  let spec: string;
+  try {
+    spec = canonicalVoiceSpec(voice, 16);
+  } catch {
+    return undefined;
+  }
+  return list.find((b) => b.spec === spec);
 }
 
 /** True for a plain single voice id (not a blend). */

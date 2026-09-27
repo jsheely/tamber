@@ -1,4 +1,4 @@
-"""GET /v1/voices and GET /v1/voices/{voice_id}/preview (docs/API.md §8.2, §8.3)."""
+"""GET /v1/voices and GET /v1/voices/{voice_spec}/preview (docs/API.md §8.2, §8.3)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,13 @@ from tamber_api.errors import TamberError
 from tamber_api.ratelimit import check_rate_limit
 from tamber_api.routes.common import AUTH, request_id, service_of
 from tamber_api.tts.audio import encode_chunk
-from tamber_api.tts.voices import LRUCache, preview_text, sort_voice_ids, voice_info
+from tamber_api.tts.voices import (
+    VOICE_ID_PATTERN,
+    LRUCache,
+    preview_text,
+    sort_voice_ids,
+    voice_info,
+)
 
 router = APIRouter(dependencies=AUTH, tags=["voices"])
 
@@ -61,12 +67,13 @@ def _preview_response(preview: Preview, request: Request) -> Response:
     return Response(content=preview.data, media_type=preview.media_type, headers=headers)
 
 
-@router.get("/v1/voices/{voice_id}/preview")
+@router.get("/v1/voices/{voice_spec}/preview")
 async def voice_preview(
     request: Request,
-    voice_id: str,
+    voice_spec: str,
     format: str = Query("wav", description="wav or mp3"),
 ) -> Response:
+    """Audition a single voice or a blend spec such as `af_heart(2)+af_bella(1)`."""
     service = service_of(request)
     fmt = format.strip().lower()
     if fmt not in _MEDIA_TYPES:
@@ -76,18 +83,22 @@ async def voice_preview(
             "Preview format must be 'wav' or 'mp3'.",
             param="format",
         )
-    if voice_id not in service.available_voices():
-        raise TamberError(404, "not_found", f"Unknown voice '{voice_id}'.", param="voice_id")
+    spec = voice_spec.strip()
+    if VOICE_ID_PATTERN.match(spec) and spec not in service.available_voices():
+        raise TamberError(404, "not_found", f"Unknown voice '{spec}'.", param="voice_spec")
+    resolved = service.resolve_voice(spec)  # 400 unknown_voice for a bad blend spec
+    # Keyed by the normalised mix so af_heart(2)+af_sky(1) and af_heart(4)+af_sky(2) share a clip.
+    key = ("+".join(f"{vid}({w:.3f})" for vid, w in resolved.components), fmt)
     cache = preview_cache(request)
-    cached = cache.get((voice_id, fmt))
+    cached = cache.get(key)
     if cached is not None:
         return _preview_response(cached, request)
     check_rate_limit(request)
     service.ensure_ready()
     job = service.prepare(
         request_id=request_id(request),
-        text=preview_text(voice_id),
-        voice=voice_id,
+        text=preview_text(resolved.ids[0]),
+        voice=resolved.spec,
         speed=1.0,
         fmt=fmt,
         lang=None,
@@ -99,5 +110,5 @@ async def voice_preview(
     data = encode_chunk(audio, fmt)
     etag = '"' + hashlib.sha256(data).hexdigest()[:32] + '"'
     preview = Preview(data=data, etag=etag, media_type=_MEDIA_TYPES[fmt])
-    cache.put((voice_id, fmt), preview)
+    cache.put(key, preview)
     return _preview_response(preview, request)

@@ -1,10 +1,12 @@
 import {
   displayNameOfVoiceId,
+  findSavedBlend,
   isBlend,
   normalizedWeights,
   parseVoiceSpec,
   type Gender,
   type LangCode,
+  type SavedBlend,
   type Voice,
 } from '@tamber/client';
 
@@ -49,21 +51,46 @@ export interface VoiceDescription {
   wordTimestamps: boolean;
 }
 
-/** Friendly label for a voice id or a blend spec. */
-export function describeVoice(spec: string, voices: readonly Voice[] | null): VoiceDescription {
+/** "Heart 67% / Bella 33%" for a blend's components. */
+export function blendMixLabel(spec: string, voices: readonly Voice[] | null): string {
+  try {
+    return normalizedWeights(parseVoiceSpec(spec, 16))
+      .map(
+        (p) =>
+          `${voiceById(voices, p.id)?.name ?? displayNameOfVoiceId(p.id)} ${Math.round(p.weight * 100)}%`,
+      )
+      .join(' / ');
+  } catch {
+    return spec;
+  }
+}
+
+/**
+ * Friendly label for a voice id or a blend spec. A blend that matches one of `savedBlends` is
+ * titled with its saved name.
+ */
+export function describeVoice(
+  spec: string,
+  voices: readonly Voice[] | null,
+  savedBlends: readonly SavedBlend[] = [],
+): VoiceDescription {
   try {
     const parts = parseVoiceSpec(spec, 16);
     if (isBlend(spec) && parts.length > 1) {
       const norm = normalizedWeights(parts);
       const names = parts.map((p) => voiceById(voices, p.id)?.name ?? displayNameOfVoiceId(p.id));
+      const saved = findSavedBlend(savedBlends, spec);
+      const shares = norm.map((p) => `${Math.round(p.weight * 100)}%`).join(' / ');
       return {
-        title: names.join(' + '),
-        subtitle: `Blend · ${norm.map((p) => `${Math.round(p.weight * 100)}%`).join(' / ')}`,
+        title: saved?.name ?? names.join(' + '),
+        subtitle: saved ? `Blend · ${names.join(' + ')} · ${shares}` : `Blend · ${shares}`,
         blend: true,
-        initials: names
-          .slice(0, 2)
-          .map((n) => n[0] ?? '')
-          .join(''),
+        initials: (saved
+          ? saved.name.split(' ').slice(0, 2).map((w) => w[0] ?? '')
+          : names.slice(0, 2).map((n) => n[0] ?? '')
+        )
+          .join('')
+          .toUpperCase(),
         wordTimestamps: parts.every((p) => voiceById(voices, p.id)?.word_timestamps ?? true),
       };
     }

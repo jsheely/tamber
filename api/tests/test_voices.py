@@ -147,8 +147,29 @@ def test_preview_is_cached_with_etag_and_rate_limited_only_when_uncached() -> No
         missing = client.get("/v1/voices/af_nope/preview")
         assert missing.status_code == 404
         assert missing.json()["error"]["code"] == "not_found"
-        blend = client.get("/v1/voices/af_heart+af_sky/preview")
-        assert blend.status_code == 404
+        bad_blend = client.get("/v1/voices/af_heart+af_nope/preview")
+        assert bad_blend.status_code == 400
+        assert bad_blend.json()["error"]["code"] == "unknown_voice"
+
+
+def test_blend_preview_is_cached_by_canonical_spec() -> None:
+    app = make_app(rate_limit_per_minute=1)
+    with TestClient(app) as client:
+        wait_ready(client)
+        engine = app.state.engine
+        r = client.get("/v1/voices/af_heart(2)+af_sky(1)/preview")
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "audio/wav"
+        assert r.content[:4] == b"RIFF"
+        calls = engine.calls
+        # Same blend written differently (URL-encoded "+", spaces, equivalent weights): cache hit.
+        same = client.get("/v1/voices/af_heart(4)%2B%20af_sky(2)/preview")
+        assert same.status_code == 200 and same.content == r.content
+        assert engine.calls == calls
+        # A different mix is a different (uncached) preview and hits the 1/minute limit.
+        assert client.get("/v1/voices/af_heart+af_sky/preview").status_code == 429
+        too_many = client.get("/v1/voices/af_heart+af_sky+af_bella+af_nicole+am_adam/preview")
+        assert too_many.status_code == 400
 
 
 def test_mp3_preview() -> None:

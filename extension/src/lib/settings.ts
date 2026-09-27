@@ -71,16 +71,20 @@ export function syncItemBytes(key: string, value: unknown): number {
   return new TextEncoder().encode(key + JSON.stringify(value)).length;
 }
 
-/** Keep the synced item under budget by trimming the only unbounded-ish field (favourites). */
+/**
+ * Keep the synced item under budget by trimming the unbounded-ish lists: the oldest favourites
+ * first, then the oldest saved blends.
+ */
 export function fitSyncPayload(
   shared: Omit<TamberSettings, 'apiKey'>,
 ): Omit<TamberSettings, 'apiKey'> {
   let out = shared;
-  while (
-    syncItemBytes(SYNC_SETTINGS_KEY, out) > SYNC_ITEM_BUDGET_BYTES &&
-    out.favoriteVoices.length > 0
-  ) {
+  const over = () => syncItemBytes(SYNC_SETTINGS_KEY, out) > SYNC_ITEM_BUDGET_BYTES;
+  while (over() && out.favoriteVoices.length > 0) {
     out = { ...out, favoriteVoices: out.favoriteVoices.slice(0, -1) };
+  }
+  while (over() && out.savedBlends.length > 0) {
+    out = { ...out, savedBlends: out.savedBlends.slice(0, -1) };
   }
   return out;
 }

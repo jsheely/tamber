@@ -9,8 +9,9 @@ import classes from './VoiceSummary.module.css';
 export function VoiceSummary() {
   const voice = useSettings((s) => s.voice);
   const voices = useSession((s) => s.voices);
+  const savedBlends = useSettings((s) => s.savedBlends);
   const openDrawer = useSession((s) => s.openDrawer);
-  const d = describeVoice(voice, voices);
+  const d = describeVoice(voice, voices, savedBlends);
   return (
     <UnstyledButton
       className={classes.card}

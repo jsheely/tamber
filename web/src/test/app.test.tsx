@@ -3,11 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
+import { ChunkedPlayer } from '../player/ChunkedPlayer';
 import { setPlayer } from '../player/instance';
+import { noopAnchor } from '../player/silentAnchor';
 import { Providers } from '../Providers';
 import { useDraft } from '../store/draft';
 import { useSession } from '../store/session';
 import { getSettings, useSettings } from '../store/settings';
+import { FakeAudioContext, makeWav } from './fakes';
 
 const HEALTH: HealthResponse = {
   status: 'ok',
@@ -60,6 +63,18 @@ const VOICES: VoicesResponse = {
       preview_text: 'Hi.',
       tags: ['default', 'recommended'],
     },
+    {
+      id: 'af_bella',
+      name: 'Bella',
+      language: 'en-US',
+      language_name: 'American English',
+      lang_code: 'a',
+      gender: 'female',
+      grade: 'A-',
+      word_timestamps: true,
+      preview_text: 'Hi.',
+      tags: [],
+    },
   ],
 };
 
@@ -68,6 +83,10 @@ function mockServer(health: Partial<HealthResponse> = {}) {
     const url = String(input);
     if (url.endsWith('/v1/health')) return Response.json({ ...HEALTH, ...health });
     if (url.endsWith('/v1/voices')) return Response.json(VOICES);
+    if (/\/v1\/voices\/[^/]+\/preview/.test(url)) {
+      const wav = makeWav(0.5);
+      return new Response(new Uint8Array(wav), { headers: { 'Content-Type': 'audio/wav' } });
+    }
     return Response.json({ error: { code: 'not_found', message: 'no', type: 'x', param: null, request_id: null } }, { status: 404 });
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -104,7 +123,7 @@ describe('App', () => {
     expect(screen.getByTestId('composer-stats')).toHaveTextContent('2 chunks');
     expect(screen.getByTestId('play-button')).toBeInTheDocument();
     await waitFor(() => expect(useSession.getState().connection).toBe('ok'));
-    await waitFor(() => expect(useSession.getState().voices).toHaveLength(1));
+    await waitFor(() => expect(useSession.getState().voices).toHaveLength(2));
     expect(fetchMock.mock.calls.map((c) => String(c[0]))).toEqual(
       expect.arrayContaining(['/v1/health', '/v1/voices']),
     );
@@ -116,6 +135,51 @@ describe('App', () => {
     await waitFor(() => expect(useSession.getState().drawer).toBe('settings'));
     expect(useSession.getState().focusApiKey).toBe(true);
     expect(await screen.findByTestId('settings-key')).toBeInTheDocument();
+  });
+
+  it('blend tab previews the mix, saves it under a name and uses it', async () => {
+    const fetchMock = mockServer();
+    const ctx = new FakeAudioContext();
+    setPlayer(new ChunkedPlayer({ createContext: () => ctx.asAudioContext(), anchor: noopAnchor }));
+    const user = userEvent.setup();
+    renderApp();
+    await waitFor(() => expect(useSession.getState().voices).toHaveLength(2));
+
+    await user.click(screen.getAllByTestId('voice-summary')[0]!);
+    await user.click(await screen.findByRole('tab', { name: /blend/i }));
+    expect(await screen.findByTestId('blend-spec')).toHaveTextContent('af_heart+af_bella');
+
+    // Preview fetches the blend's clip (URL-encoded spec) and plays it through the AudioContext.
+    await user.click(screen.getByTestId('blend-preview'));
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.map((c) => String(c[0]))).toContain(
+        '/v1/voices/af_heart%2Baf_bella/preview?format=wav',
+      ),
+    );
+    await waitFor(() => expect(ctx.decodeCalls).toBe(1));
+
+    // Save under a name: it appears in the saved list and in localStorage.
+    expect(screen.getByTestId('blend-save')).toBeDisabled();
+    await user.type(screen.getByTestId('blend-name'), '  Warm   duet ');
+    await user.click(screen.getByTestId('blend-save'));
+    expect(getSettings().savedBlends).toEqual([{ name: 'Warm duet', spec: 'af_heart+af_bella' }]);
+    expect(screen.getByTestId('saved-blend')).toHaveTextContent('Warm duet');
+    expect(screen.getByTestId('saved-blend')).toHaveTextContent('Heart 50% / Bella 50%');
+    expect(screen.getByTestId('blend-save')).toHaveTextContent('Saved');
+    const saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}');
+    expect(saved.state.savedBlends).toEqual([{ name: 'Warm duet', spec: 'af_heart+af_bella' }]);
+
+    // Using the saved blend sets the voice; the summary card shows the saved name.
+    await user.click(screen.getByRole('button', { name: /^Warm duet, / }));
+    expect(getSettings().voice).toBe('af_heart+af_bella');
+    expect(screen.getAllByTestId('voice-summary')[0]).toHaveTextContent('Warm duet');
+    expect(screen.getByTestId('blend-use')).toHaveTextContent('This blend is in use');
+
+    // Deleting removes it from settings (the voice itself stays).
+    await user.click(screen.getByRole('button', { name: 'Delete Warm duet' }));
+    expect(getSettings().savedBlends).toEqual([]);
+    expect(getSettings().voice).toBe('af_heart+af_bella');
+    expect(screen.queryByTestId('saved-blend')).not.toBeInTheDocument();
   });
 
   it('settings drawer saves the connection to localStorage', async () => {

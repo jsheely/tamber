@@ -3,6 +3,8 @@ import {
   SETTINGS_VERSION,
   createDefaultSettings,
   migrateSettings,
+  removeSavedBlend,
+  saveBlend,
   toggleFavoriteVoice,
   updateSettings,
   type TamberSettings,
@@ -17,6 +19,9 @@ export interface SettingsActions {
   /** Apply a patch through updateSettings() (validates, clamps, normalises). */
   update: (patch: SettingsPatch) => void;
   toggleFavorite: (voice: string) => void;
+  /** Keep a named blend (replaces one with the same name or spec). Throws for an invalid spec. */
+  saveBlend: (blend: { name: string; spec: string }) => void;
+  removeBlend: (name: string) => void;
   reset: () => void;
 }
 
@@ -39,6 +44,7 @@ export function pickSettings(state: TamberSettings): TamberSettings {
     motion: state.motion,
     volume: state.volume,
     favoriteVoices: state.favoriteVoices,
+    savedBlends: state.savedBlends,
   };
 }
 
@@ -56,6 +62,18 @@ export const useSettings = create<SettingsState>()(
         set(
           updateSettings(pickSettings(get()), {
             favoriteVoices: toggleFavoriteVoice(get().favoriteVoices, voice),
+          }),
+        ),
+      saveBlend: (blend) =>
+        set(
+          updateSettings(pickSettings(get()), {
+            savedBlends: saveBlend(get().savedBlends, blend),
+          }),
+        ),
+      removeBlend: (name) =>
+        set(
+          updateSettings(pickSettings(get()), {
+            savedBlends: removeSavedBlend(get().savedBlends, name),
           }),
         ),
       reset: () => {

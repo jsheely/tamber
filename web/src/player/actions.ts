@@ -3,7 +3,7 @@
  * player.unlock() synchronously before anything else (the iOS gesture rule), then does the rest.
  */
 import { notifications } from '@mantine/notifications';
-import { isSingleVoiceId } from '@tamber/client';
+import { canonicalVoiceSpec } from '@tamber/client';
 import { getClient } from '../api/useTamberClient';
 import { notifyError } from '../api/errors';
 import { slugify } from '../lib/format';
@@ -125,20 +125,26 @@ const previewCache = new Map<string, Uint8Array>();
 let previewToken = 0;
 
 /**
- * Audition a voice through the same AudioContext. The synchronous part (unlock + parking the
- * main playback) runs inside the tap; fetching and decoding come after.
+ * Audition a voice or a blend spec through the same AudioContext. The synchronous part (unlock +
+ * parking the main playback) runs inside the tap; fetching and decoding come after.
  */
-export async function previewVoice(voiceId: string): Promise<void> {
+export async function previewVoice(voice: string): Promise<void> {
   const player = getPlayer();
   player.beginPreview();
-  if (!isSingleVoiceId(voiceId)) return;
   const token = ++previewToken;
   const format = getSettings().format;
-  const key = `${voiceId}:${format}`;
+  let spec: string;
+  try {
+    spec = canonicalVoiceSpec(voice, 16);
+  } catch (err) {
+    notifyError(err, { id: 'tamber-preview' });
+    return;
+  }
+  const key = `${spec}:${format}`;
   try {
     let bytes = previewCache.get(key);
     if (!bytes) {
-      bytes = await getClient().voicePreview(voiceId, format);
+      bytes = await getClient().voicePreview(spec, format);
       if (previewCache.size > 24) previewCache.clear();
       previewCache.set(key, bytes);
     }

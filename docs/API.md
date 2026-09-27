@@ -285,9 +285,9 @@ weight    := decimal, 0 < weight <= 100            default 1
 
 Whitespace around tokens is ignored. A repeated id has its weights summed. The server loads each voice's style tensor and computes the weighted mean, with weights normalized to sum to 1: `af_bella(2)+af_sky(1)` gives 2/3 Bella and 1/3 Sky. The blend's language is its **first** component's, unless `lang` is given. The canonical spec (ids joined by `+`; weights omitted when all equal, otherwise `(w)` rounded to 3 decimals) is echoed as `voice` in the `start` event. Blended tensors are cached (LRU, 32 entries). Subtraction (`-`) is not supported. `parseVoiceSpec()` in the client package implements the same grammar.
 
-### 8.3 `GET /v1/voices/{voice_id}/preview?format=wav|mp3`
+### 8.3 `GET /v1/voices/{voice_spec}/preview?format=wav|mp3`
 
-Auth required. Rate-limited only when not cached. Returns the voice's `preview_text` spoken by that voice as one complete audio file (`Content-Type: audio/wav` or `audio/mpeg`). `voice_id` must be a single voice (not a blend). The result is cached in memory (LRU) and sent with `Cache-Control: private, max-age=86400` and an `ETag`. 404 `not_found` for an unknown voice.
+Auth required. Rate-limited only when not cached. Returns the voice's `preview_text` spoken by that voice as one complete audio file (`Content-Type: audio/wav` or `audio/mpeg`). `voice_spec` is a single voice id or a blend spec (§8.2), URL-encoded, e.g. `/v1/voices/af_heart(2)%2Baf_bella(1)/preview`; a blend speaks the first component's `preview_text`. The result is cached in memory (LRU, keyed by the normalized mix, so `af_heart(2)+af_bella(1)` and `af_heart(4)+af_bella(2)` share one clip) and sent with `Cache-Control: private, max-age=86400` and an `ETag`. 404 `not_found` for an unknown single voice id; 400 `unknown_voice` for an invalid blend spec.
 
 ### 8.4 `POST /v1/tts`: synthesis with word timings
 

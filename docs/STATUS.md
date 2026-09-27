@@ -130,7 +130,6 @@ Contract types, `TamberClient` (NDJSON streaming, extract, previews, test connec
 8. **Mobile chunk cache.** Chunk files are not size-limited until stop or a new document (WAV is about 170 MB per hour).
 9. **Toolchain.** typescript-eslint does not support TypeScript 7 yet. web and extension each carry a TS 6 shim for ESLint (`scripts/eslint-typescript6.mjs` and the `eslint.config.js` redirect). Remove both when typescript-eslint supports TS 7. jsdom 30 wants Node >= 24.15, and this machine has 24.13 (a warning only). The repo uses pnpm 10 workspaces with the hoisted linker (isolated linking broke React Native's C++ builds on Windows: object paths over CMake's 250-character limit), so web, extension and mobile pin one React version (19.2.3). `@tamber/client` is consumed from source via a `source` export condition, so no client build step precedes app builds.
 10. **Smaller UX items:**
-    - blends can't be previewed (the preview route takes single voices only);
     - `.txt` imports read the file name as the title;
     - on long texts, web's "Save audio" appears only once every chunk has arrived;
     - a second share while the mobile player is open pushes a duplicate route;

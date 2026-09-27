@@ -205,6 +205,7 @@ Defined in `@tamber/client` (`TamberSettings`, `DEFAULT_SETTINGS`, `migrateSetti
 | `motion` | `system`/`full`/`reduced` | `system` | `system` follows `prefers-reduced-motion`. |
 | `volume` | 0..1 | `1` | Client-side gain. |
 | `favoriteVoices` | string[] | `[]` | At most 24, most recent first. |
+| `savedBlends` | `{name, spec}[]` | `[]` | Named blends (two or more voices, canonical spec), at most 24, most recently saved first. Names are unique (case-insensitive), at most 40 chars. `saveBlend()` replaces an entry with the same name or spec. |
 
 | Client | Storage | Mechanism |
 |---|---|---|

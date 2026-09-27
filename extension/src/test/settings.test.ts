@@ -19,7 +19,7 @@ import {
 describe('settings adapter', () => {
   it('returns defaults when nothing is stored (apiBaseUrl "" = not configured)', async () => {
     const s = await loadSettings();
-    expect(s).toEqual({ ...DEFAULT_SETTINGS, favoriteVoices: [] });
+    expect(s).toEqual({ ...DEFAULT_SETTINGS, favoriteVoices: [], savedBlends: [] });
     expect(s.apiBaseUrl).toBe('');
     expect(await loadExtensionSettings()).toEqual({
       showMiniPlayer: true,
@@ -131,10 +131,16 @@ describe('settings adapter', () => {
         { length: 400 },
         (_, i) => `af_voice_number_${i}(1)+am_other_${i}(2)`,
       ),
+      savedBlends: Array.from({ length: 200 }, (_, i) => ({
+        name: `A rather long saved blend name number ${i}`,
+        spec: `af_voice_number_${i}(1)+am_other_${i}(2)`,
+      })),
     };
     const { apiKey: _k, ...rest } = shared;
     const fitted = fitSyncPayload(rest);
     expect(syncItemBytes(SYNC_SETTINGS_KEY, fitted)).toBeLessThanOrEqual(SYNC_ITEM_BUDGET_BYTES);
-    expect(fitted.favoriteVoices.length).toBeGreaterThan(0);
+    // Favourites are trimmed first; the saved blends only when favourites alone are not enough.
+    expect(fitted.savedBlends.length).toBeGreaterThan(0);
+    expect(fitted.savedBlends.length).toBeLessThan(200);
   });
 });
