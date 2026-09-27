@@ -109,6 +109,10 @@ function AppSection() {
   const builtLabel = Number.isNaN(built.getTime())
     ? __BUILD_TIME__
     : built.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  // Short form for the one-line row (the full timestamp goes in the "up to date" notice).
+  const builtShort = Number.isNaN(built.getTime())
+    ? ''
+    : built.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
   const onCheck = async () => {
     const result = await check();
@@ -136,13 +140,13 @@ function AppSection() {
 
   return (
     <Section title="App">
-      <Group justify="space-between" align="center" gap="sm">
-        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
-          <Text size="sm" fw={500} data-testid="app-version">
+      <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <Text size="sm" fw={500} truncate data-testid="app-version">
             Tamber {__APP_VERSION__}
           </Text>
-          <Text size="xs" c="dimmed">
-            Built {builtLabel}
+          <Text size="xs" c="dimmed" truncate>
+            {builtShort ? `Built ${builtShort}` : ''}
             {lastChecked
               ? ` · checked ${new Date(lastChecked).toLocaleTimeString(undefined, { timeStyle: 'short' })}`
               : ''}

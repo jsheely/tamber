@@ -51,7 +51,7 @@ function SpeedControl() {
           {formatSpeed(speed)}
         </Button>
       </Popover.Target>
-      <Popover.Dropdown w={260}>
+      <Popover.Dropdown w={320}>
         <Stack gap="xs" pb="md">
           <Group justify="space-between">
             <Text size="sm" fw={600}>
