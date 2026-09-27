@@ -136,8 +136,8 @@ function AppSection() {
 
   return (
     <Section title="App">
-      <Group justify="space-between" align="center" wrap="nowrap">
-        <div>
+      <Group justify="space-between" align="center" gap="sm">
+        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
           <Text size="sm" fw={500} data-testid="app-version">
             Tamber {__APP_VERSION__}
           </Text>
@@ -151,6 +151,7 @@ function AppSection() {
         {needRefresh ? (
           <Button
             variant="gradient"
+            style={{ flexShrink: 0 }}
             leftSection={<IconRefresh size={16} />}
             loading={applying}
             onClick={() => void apply()}
@@ -161,6 +162,7 @@ function AppSection() {
         ) : (
           <Button
             variant="light"
+            style={{ flexShrink: 0 }}
             leftSection={<IconRefresh size={16} />}
             loading={checking}
             onClick={() => void onCheck()}
