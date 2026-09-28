@@ -58,8 +58,8 @@ type Tab = Browser.tabs.Tab;
 type MenuInfo = Browser.contextMenus.OnClickData;
 
 // ---------------------------------------------------------------------------------------------
-// Extension-settings cache: sidePanel.open() must run synchronously inside the user gesture, so
-// the openSidePanelOnPlay flag has to be known without awaiting storage.
+// Extension-settings cache: sidePanel.open() / action.openPopup() must run synchronously inside
+// the user gesture, so the openOnPlay choice has to be known without awaiting storage.
 // ---------------------------------------------------------------------------------------------
 
 let extCache: ExtensionSettings | null = null;
@@ -82,25 +82,49 @@ async function currentExtensionSettings(): Promise<ExtensionSettings> {
   return extCache ?? (await primeExtensionSettings());
 }
 
-/** Open the side panel for `tab` if enabled. Synchronous when the cache is warm (keeps the gesture). */
-function maybeOpenSidePanel(tab: Tab | undefined): Promise<void> | void {
-  if (!tab) return;
-  const open = () => {
-    const target =
-      tab.id !== undefined && tab.id >= 0 ? { tabId: tab.id } : { windowId: tab.windowId };
-    return browser.sidePanel.open(target).catch((err: unknown) => {
-      console.warn('[tamber] could not open the side panel', err);
-    });
+/** Open the side panel reader for `tab`. */
+function openSidePanel(tab: Tab): Promise<void> {
+  const target =
+    tab.id !== undefined && tab.id >= 0 ? { tabId: tab.id } : { windowId: tab.windowId };
+  return browser.sidePanel.open(target).catch((err: unknown) => {
+    console.warn('[tamber] could not open the side panel', err);
+  });
+}
+
+/** Open the toolbar popup in `tab`'s window (chrome.action.openPopup, Chrome 127+). */
+function openPopup(tab: Tab): Promise<void> {
+  const action = browser.action as {
+    openPopup?: (options?: { windowId?: number }) => Promise<void>;
   };
+  if (typeof action.openPopup !== 'function') {
+    console.warn('[tamber] action.openPopup is not available in this Chrome');
+    return Promise.resolve();
+  }
+  return action
+    .openPopup(tab.windowId !== undefined && tab.windowId >= 0 ? { windowId: tab.windowId } : {})
+    .catch((err: unknown) => {
+      console.warn('[tamber] could not open the popup', err);
+    });
+}
+
+function openReader(ext: ExtensionSettings, tab: Tab): Promise<void> | void {
+  if (ext.openOnPlay === 'sidepanel') return openSidePanel(tab);
+  if (ext.openOnPlay === 'popup') return openPopup(tab);
+}
+
+/**
+ * Open the reader UI chosen in Settings (side panel, popup or nothing) for `tab`. Synchronous when
+ * the cache is warm, which keeps the call inside the user gesture.
+ */
+function maybeOpenReader(tab: Tab | undefined): Promise<void> | void {
+  if (!tab) return;
   if (extCache) {
-    if (extCache.openSidePanelOnPlay) void open();
+    void openReader(extCache, tab);
     return;
   }
-  // Cold service worker: the flag is still loading. Try after it arrives (Chrome may refuse if the
-  // gesture has expired by then; the popup's "Open reader" button always works).
-  return primeExtensionSettings().then((ext) => {
-    if (ext.openSidePanelOnPlay) return open();
-  });
+  // Cold service worker: the setting is still loading. Try after it arrives (Chrome may refuse if
+  // the gesture has expired by then; the popup's "Open reader" button always works).
+  return primeExtensionSettings().then((ext) => openReader(ext, tab));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -362,11 +386,12 @@ async function reportError(err: unknown, tabId?: number): Promise<void> {
 }
 
 /**
- * contextMenus.onClicked. The side panel is opened synchronously at the top (before any await),
- * because chrome.sidePanel.open() only works inside the user gesture.
+ * contextMenus.onClicked. The reader UI (side panel or popup) is opened synchronously at the top
+ * (before any await), because chrome.sidePanel.open() / chrome.action.openPopup() only work inside
+ * the user gesture.
  */
 export function handleContextMenuClick(info: MenuInfo, tab?: Tab): Promise<void> {
-  const panel = maybeOpenSidePanel(tab);
+  const panel = maybeOpenReader(tab);
   return (async () => {
     await panel;
     const tabId = tab?.id !== undefined && tab.id >= 0 ? tab.id : undefined;
@@ -481,7 +506,7 @@ async function readSelectionOrPage(
 /** commands.onCommand */
 export function handleCommand(command: string, tabArg?: Tab): Promise<void> {
   if (command === 'read-selection') {
-    const panel = maybeOpenSidePanel(tabArg);
+    const panel = maybeOpenReader(tabArg);
     return readSelectionOrPage(tabArg, panel).then(() => undefined);
   }
   if (command === 'toggle-playback') return control('toggle').then(() => undefined);

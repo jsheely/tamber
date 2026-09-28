@@ -75,7 +75,7 @@ Settings are stored as follows:
 |---|---|---|
 | Server address, voice, speed, format, chunking, highlight, auto-scroll, theme, motion, volume, favourites | `chrome.storage.sync["tamber.settings"]` | yes |
 | API key | `chrome.storage.local["tamber.secrets"]` | **no** (this device only) |
-| Show mini-player, open side panel on play | `chrome.storage.sync["tamber.extension"]` | yes |
+| Show mini-player, what opens when reading starts (nothing / side panel / popup) | `chrome.storage.sync["tamber.extension"]` | yes |
 | Voice list cache, mini-player position | `chrome.storage.local` | no |
 | Last reading, for resuming after the engine closed | `chrome.storage.session` | no (cleared when Chrome closes) |
 
@@ -213,10 +213,12 @@ mini-player inlines the glyph path so that it needs no web-accessible resources.
 - Chrome does not allow content scripts on `chrome://` pages, the Chrome Web Store or the built-in
   PDF viewer, so the mini-player cannot appear there. Reading still works: the menu gives the
   selection text, and the side panel and popup show playback.
-- `sidePanel.open()` must run inside the user gesture. The extension reads the "open side panel on
-  play" flag from an in-memory cache so the call is synchronous. On a cold service-worker start the
-  cache may still be loading, and then Chrome can refuse to open the panel. The popup's
-  **Open reader** button always works.
+- `sidePanel.open()` and `action.openPopup()` must run inside the user gesture. The extension reads
+  the **When reading starts from a page** choice (Options → Reading: just read, open the side
+  panel, or open the popup) from an in-memory cache so the call is synchronous. On a cold
+  service-worker start the cache may still be loading, and then Chrome can refuse to open the
+  panel or popup. The popup's **Open reader** button always works. `action.openPopup()` needs
+  Chrome 127 or newer; on older Chromes the choice behaves like "just read".
 - Remote servers must use `https://` (`optional_host_permissions`).
 - Chrome closes an `AUDIO_PLAYBACK` offscreen document after about 30 s without audio. If the
   server keeps a request queued (or the first sentence takes longer than that on a slow CPU), the

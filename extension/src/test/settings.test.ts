@@ -23,7 +23,7 @@ describe('settings adapter', () => {
     expect(s.apiBaseUrl).toBe('');
     expect(await loadExtensionSettings()).toEqual({
       showMiniPlayer: true,
-      openSidePanelOnPlay: false,
+      openOnPlay: 'none',
     });
   });
 
@@ -90,15 +90,36 @@ describe('settings adapter', () => {
   });
 
   it('stores extension-only settings separately', async () => {
-    await saveExtensionSettings({ openSidePanelOnPlay: true });
+    await saveExtensionSettings({ openOnPlay: 'popup' });
     const sync = await fakeBrowser.storage.sync.get(EXTENSION_SETTINGS_KEY);
-    expect(sync[EXTENSION_SETTINGS_KEY]).toEqual({
-      showMiniPlayer: true,
-      openSidePanelOnPlay: true,
+    expect(sync[EXTENSION_SETTINGS_KEY]).toEqual({ showMiniPlayer: true, openOnPlay: 'popup' });
+    expect(await loadExtensionSettings()).toEqual({ showMiniPlayer: true, openOnPlay: 'popup' });
+  });
+
+  it('migrates the legacy openSidePanelOnPlay flag and rejects unknown openOnPlay values', async () => {
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: false, openSidePanelOnPlay: true },
     });
-    expect(await loadExtensionSettings()).toEqual({
+    expect(await loadExtensionSettings()).toEqual({ showMiniPlayer: false, openOnPlay: 'sidepanel' });
+
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { openSidePanelOnPlay: false },
+    });
+    expect((await loadExtensionSettings()).openOnPlay).toBe('none');
+
+    // An explicit value wins over the legacy flag; garbage falls back to the default.
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { openOnPlay: 'popup', openSidePanelOnPlay: true },
+    });
+    expect((await loadExtensionSettings()).openOnPlay).toBe('popup');
+    await fakeBrowser.storage.sync.set({ [EXTENSION_SETTINGS_KEY]: { openOnPlay: 'window' } });
+    expect((await loadExtensionSettings()).openOnPlay).toBe('none');
+
+    // Saving rewrites the item in the new shape (the legacy key is dropped).
+    await saveExtensionSettings({ showMiniPlayer: true });
+    expect((await fakeBrowser.storage.sync.get(EXTENSION_SETTINGS_KEY))[EXTENSION_SETTINGS_KEY]).toEqual({
       showMiniPlayer: true,
-      openSidePanelOnPlay: true,
+      openOnPlay: 'none',
     });
   });
 

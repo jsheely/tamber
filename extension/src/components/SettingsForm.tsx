@@ -36,6 +36,7 @@ import {
 import { useSettings } from '../hooks/useSettings';
 import { useVoices } from '../hooks/useVoices';
 import { createClient } from '../lib/client';
+import type { OpenOnPlay } from '../lib/settings';
 import {
   describePatternError,
   hasApiPermission,
@@ -366,12 +367,24 @@ function ReadingSettings() {
         checked={ext.showMiniPlayer}
         onChange={(e) => void saveExt({ showMiniPlayer: e.currentTarget.checked })}
       />
-      <Switch
-        label="Open the side panel reader when reading starts"
-        description="From the context menu or keyboard shortcut."
-        checked={ext.openSidePanelOnPlay}
-        onChange={(e) => void saveExt({ openSidePanelOnPlay: e.currentTarget.checked })}
-      />
+      <Stack gap={4}>
+        <Text size="sm" fw={500}>
+          When reading starts from a page
+        </Text>
+        <Text size="xs" c="dimmed">
+          From the right-click menu or the keyboard shortcut. The popup needs Chrome 127 or newer.
+        </Text>
+        <SegmentedControl
+          aria-label="When reading starts from a page"
+          value={ext.openOnPlay}
+          onChange={(v) => void saveExt({ openOnPlay: v as OpenOnPlay })}
+          data={[
+            { value: 'none', label: 'Just read' },
+            { value: 'sidepanel', label: 'Open the side panel' },
+            { value: 'popup', label: 'Show the popup' },
+          ]}
+        />
+      </Stack>
     </Stack>
   );
 }

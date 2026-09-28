@@ -46,6 +46,9 @@ function mockExtensionApis(pageResults: Record<string, unknown> = {}) {
   const open = vi.fn(async () => undefined);
   Object.assign(fakeBrowser.sidePanel, { open });
 
+  const openPopup = vi.fn(async () => undefined);
+  Object.assign(fakeBrowser.action, { openPopup });
+
   const contains = vi.fn(async () => true);
   Object.assign(fakeBrowser.permissions, { contains });
 
@@ -60,7 +63,16 @@ function mockExtensionApis(pageResults: Record<string, unknown> = {}) {
       return true;
     },
   );
-  return { createDocument, hasDocument, closeDocument, executeScript, open, contains, played };
+  return {
+    createDocument,
+    hasDocument,
+    closeDocument,
+    executeScript,
+    open,
+    openPopup,
+    contains,
+    played,
+  };
 }
 
 function jsonResponse(body: unknown, status = 200) {
@@ -73,7 +85,7 @@ function jsonResponse(body: unknown, status = 200) {
 describe('background: context menu', () => {
   beforeEach(async () => {
     await saveSettings({ apiBaseUrl: 'https://tts.example.com', voice: 'af_bella', speed: 1.25 });
-    setExtensionSettingsCache({ showMiniPlayer: false, openSidePanelOnPlay: false });
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'none' });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -151,12 +163,13 @@ describe('background: context menu', () => {
     expect(apis.played.filter((m) => m.type === 'play')).toHaveLength(2);
   });
 
-  it('opens the side panel synchronously, before any await, when enabled', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: false, openSidePanelOnPlay: true });
+  it('opens the side panel synchronously, before any await, when chosen', async () => {
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'sidepanel' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     const pending = handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     // Nothing has been awaited yet: the gesture-bound call already happened.
     expect(apis.open).toHaveBeenCalledWith({ tabId: 5 });
+    expect(apis.openPopup).not.toHaveBeenCalled();
     expect(apis.contains).not.toHaveBeenCalled();
     expect(apis.executeScript).not.toHaveBeenCalled();
     await pending;
@@ -165,14 +178,34 @@ describe('background: context menu', () => {
     );
   });
 
-  it('does not open the side panel when disabled', async () => {
+  it('opens the toolbar popup synchronously, before any await, when chosen', async () => {
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    const apis = mockExtensionApis({ pageSelection: 'Hi.' });
+    const pending = handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
+    expect(apis.openPopup).toHaveBeenCalledWith({ windowId: 1 });
+    expect(apis.open).not.toHaveBeenCalled();
+    expect(apis.executeScript).not.toHaveBeenCalled();
+    await pending;
+    expect(apis.played.find((m) => m.type === 'play')?.text).toBe('Hi.');
+  });
+
+  it('still reads when the popup cannot be opened', async () => {
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    const apis = mockExtensionApis({ pageSelection: 'Hi.' });
+    apis.openPopup.mockRejectedValueOnce(new Error('Could not find an active browser window.'));
+    await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
+    expect(apis.played.find((m) => m.type === 'play')?.text).toBe('Hi.');
+  });
+
+  it('opens nothing with "just read"', async () => {
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     expect(apis.open).not.toHaveBeenCalled();
+    expect(apis.openPopup).not.toHaveBeenCalled();
   });
 
   it('injects the mini-player into the tab when enabled', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: true, openSidePanelOnPlay: false });
+    setExtensionSettingsCache({ showMiniPlayer: true, openOnPlay: 'none' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     expect(apis.executeScript).toHaveBeenCalledWith({
@@ -205,7 +238,7 @@ describe('background: context menu', () => {
 describe('background: commands', () => {
   beforeEach(async () => {
     await saveSettings({ apiBaseUrl: 'https://tts.example.com' });
-    setExtensionSettingsCache({ showMiniPlayer: false, openSidePanelOnPlay: false });
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'none' });
   });
   afterEach(() => setExtensionSettingsCache(null));
 
@@ -215,6 +248,15 @@ describe('background: commands', () => {
     expect(apis.executeScript.mock.calls[0]![0]).toMatchObject({
       target: { tabId: 5, allFrames: true },
     });
+    expect(apis.played.find((m) => m.type === 'play')?.text).toBe('Selected words.');
+  });
+
+  it('read-selection opens the chosen reader UI inside the gesture', async () => {
+    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    const apis = mockExtensionApis({ pageSelection: 'Selected words.' });
+    const pending = handleCommand('read-selection', TAB);
+    expect(apis.openPopup).toHaveBeenCalledWith({ windowId: 1 });
+    await pending;
     expect(apis.played.find((m) => m.type === 'play')?.text).toBe('Selected words.');
   });
 

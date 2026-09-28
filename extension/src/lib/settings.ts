@@ -4,7 +4,7 @@
  * Layout (docs/ARCHITECTURE.md section 7):
  * - chrome.storage.sync  ['tamber.settings']  = splitSecrets(settings).shared   (syncs across Chromes)
  * - chrome.storage.local ['tamber.secrets']   = { apiKey }                      (never synced)
- * - chrome.storage.sync  ['tamber.extension'] = { showMiniPlayer, openSidePanelOnPlay }
+ * - chrome.storage.sync  ['tamber.extension'] = { showMiniPlayer, openOnPlay }
  *
  * load() merges the parts and runs migrateSettings(); save(patch) runs updateSettings() and writes
  * the split parts back. chrome.storage.onChanged keeps every open context in sync (see useSettings).
@@ -29,29 +29,48 @@ export const EXTENSION_SETTINGS_KEY = 'tamber.extension';
 /** chrome.storage.sync limit per item is 8192 bytes; we stay well below it. */
 export const SYNC_ITEM_BUDGET_BYTES = 6 * 1024;
 
+/**
+ * What opens when reading starts from a page (context menu or keyboard shortcut):
+ * - 'none':      just read (the badge and, when enabled, the mini-player show progress),
+ * - 'sidepanel': open the side panel reader,
+ * - 'popup':     open the toolbar popup.
+ */
+export const OPEN_ON_PLAY_VALUES = ['none', 'sidepanel', 'popup'] as const;
+export type OpenOnPlay = (typeof OPEN_ON_PLAY_VALUES)[number];
+
 export interface ExtensionSettings {
   /** Inject the floating in-page mini-player into the tab being read. */
   showMiniPlayer: boolean;
-  /** Open the side panel reader whenever reading starts from a page. */
-  openSidePanelOnPlay: boolean;
+  /** Which reader UI (if any) opens whenever reading starts from a page. */
+  openOnPlay: OpenOnPlay;
 }
 
 export const DEFAULT_EXTENSION_SETTINGS: Readonly<ExtensionSettings> = Object.freeze({
   showMiniPlayer: true,
-  openSidePanelOnPlay: false,
+  openOnPlay: 'none',
 });
+
+function isOpenOnPlay(v: unknown): v is OpenOnPlay {
+  return typeof v === 'string' && (OPEN_ON_PLAY_VALUES as readonly string[]).includes(v);
+}
 
 export function migrateExtensionSettings(raw: unknown): ExtensionSettings {
   const p = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  // Legacy `openSidePanelOnPlay: boolean` (before the popup option existed).
+  const legacy: OpenOnPlay | null =
+    typeof p.openSidePanelOnPlay === 'boolean'
+      ? p.openSidePanelOnPlay
+        ? 'sidepanel'
+        : 'none'
+      : null;
   return {
     showMiniPlayer:
       typeof p.showMiniPlayer === 'boolean'
         ? p.showMiniPlayer
         : DEFAULT_EXTENSION_SETTINGS.showMiniPlayer,
-    openSidePanelOnPlay:
-      typeof p.openSidePanelOnPlay === 'boolean'
-        ? p.openSidePanelOnPlay
-        : DEFAULT_EXTENSION_SETTINGS.openSidePanelOnPlay,
+    openOnPlay: isOpenOnPlay(p.openOnPlay)
+      ? p.openOnPlay
+      : (legacy ?? DEFAULT_EXTENSION_SETTINGS.openOnPlay),
   };
 }
 
