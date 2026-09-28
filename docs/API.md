@@ -185,12 +185,13 @@ Chunks are therefore at most `M` UTF-16 units long, and in balanced mode usually
 
 ### 8.1 `GET /v1/health`
 
-No auth. Cheap, never touches the model. Use it for "test connection", capability discovery and the Docker healthcheck.
+No auth. Cheap, never touches the model. Use it for "test connection", capability discovery and the Docker healthcheck. `revision` is the git commit the image was built from (`TAMBER_REVISION`, set by the auto-deploy build); `null` when unknown.
 
 ```json
 {
   "status": "ok",
   "version": "0.1.0",
+  "revision": "9293e01f1eac35b71f433c7b9276b716ab7582e9",
   "api_version": 1,
   "engine": "kokoro",
   "model": "hexgrad/Kokoro-82M",

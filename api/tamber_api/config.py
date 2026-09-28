@@ -20,7 +20,7 @@ logger = logging.getLogger("tamber.config")
 KNOWN_LANGUAGE_CODES = ("a", "b", "e", "f", "h", "i", "p", "j", "z")
 
 #: TAMBER_* variables that are legitimately present but are not settings of the running server.
-_NON_SETTING_KEYS = {"TAMBER_TEST_MODEL", "TAMBER_VERSION"}
+_NON_SETTING_KEYS = {"TAMBER_TEST_MODEL", "TAMBER_VERSION", "TAMBER_REVISION"}
 
 
 class Settings(BaseSettings):

@@ -170,9 +170,10 @@ The installer clones the repo into `~/deploy/tamber` (that clone is reset to `or
 
 | | |
 |---|---|
+| What is deployed vs. `origin/main` | `tamber-autodeploy status` (exit code 1 when behind) |
+| Which commit a running server was built from | `curl -s localhost:8880/v1/health` → `revision`, or the image label `org.opencontainers.image.revision` |
+| Rebuild and redeploy now, even if nothing changed | `tamber-autodeploy deploy` |
 | Follow a deploy | `journalctl --user -u tamber-autodeploy -f` |
-| Timer state | `systemctl --user list-timers tamber-autodeploy.timer` |
-| Deploy now / redeploy the same commit | `systemctl --user start tamber-autodeploy.service` / `FORCE=1 tamber-autodeploy` |
 | Switch CPU ↔ GPU, branch or directory | edit `~/.config/tamber-autodeploy.env`; the next deploy applies it |
 | Change server config | edit `~/deploy/tamber/.env`, then `FORCE=1 tamber-autodeploy` |
 | Stop auto-deploying | `systemctl --user disable --now tamber-autodeploy.timer` |

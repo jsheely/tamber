@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -23,6 +24,7 @@ async def health(request: Request) -> dict[str, Any]:
     return {
         "status": service.health_status,
         "version": __version__,
+        "revision": os.environ.get("TAMBER_REVISION") or None,
         "api_version": API_VERSION,
         "engine": engine.name,
         "model": engine.model,

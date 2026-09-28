@@ -105,6 +105,12 @@ ENV HF_HUB_OFFLINE=1 \
 COPY --chown=tamber:tamber api/tamber_api /app/tamber_api
 COPY --from=web-dist --chown=tamber:tamber /src/web/dist /app/web
 
+# Git commit the image was built from (deploy/autodeploy.sh passes it). Declared last so a new
+# value only adds a metadata layer and never invalidates the cached layers above.
+ARG TAMBER_REVISION=unknown
+ENV TAMBER_REVISION=${TAMBER_REVISION}
+LABEL org.opencontainers.image.revision="${TAMBER_REVISION}"
+
 EXPOSE 8880
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
