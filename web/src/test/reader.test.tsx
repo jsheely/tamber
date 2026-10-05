@@ -1,10 +1,12 @@
 import { planChunks, type WordTiming } from '@tamber/client';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReaderPanel } from '../features/compose/ReaderPanel';
 import { ChunkedPlayer } from '../player/ChunkedPlayer';
 import { setPlayer } from '../player/instance';
 import { noopAnchor } from '../player/silentAnchor';
+import { usePlayerHotkeys } from '../player/usePlayerBindings';
 import { Providers } from '../Providers';
 import { useDraft } from '../store/draft';
 import { useSession } from '../store/session';
@@ -141,19 +143,25 @@ describe('ReaderPanel degraded mode', () => {
   });
 });
 
+function Hotkeys() {
+  usePlayerHotkeys();
+  return <textarea data-testid="field" />;
+}
+
 describe('ReaderPanel "New"', () => {
   afterEach(() => {
     setPlayer(null);
     useDraft.getState().clear();
-    useSession.getState().setView('compose');
+    useSession.setState({ view: 'compose', drawer: null });
   });
 
-  it('forgets the session, clears the draft and returns to the composer', async () => {
+  const text = 'Read me once, then start over.';
+
+  async function startReading(): Promise<ChunkedPlayer> {
     const ctx = new FakeAudioContext();
     const player = new ChunkedPlayer({ createContext: () => ctx.asAudioContext(), anchor: noopAnchor });
     setPlayer(player);
     const net = createFakeFetch();
-    const text = 'Read me once, then start over.';
     useDraft.getState().setText(text);
     useSession.getState().setView('read');
     player.unlock();
@@ -162,6 +170,11 @@ describe('ReaderPanel "New"', () => {
       { client: net.client },
     );
     await vi.waitFor(() => expect(player.getSnapshot().hasSession).toBe(true));
+    return player;
+  }
+
+  it('forgets the session, clears the draft and returns to the composer', async () => {
+    const player = await startReading();
 
     render(
       <Providers>
@@ -173,5 +186,43 @@ describe('ReaderPanel "New"', () => {
     expect(player.getSnapshot().hasSession).toBe(false);
     expect(useDraft.getState().text).toBe('');
     expect(useSession.getState().view).toBe('compose');
+  });
+
+  it('Shift+N does the same, but not while typing in a field or behind a drawer', async () => {
+    const player = await startReading();
+    const user = userEvent.setup();
+    render(<Hotkeys />);
+
+    // Typed into a field it is just a capital N.
+    await user.click(screen.getByTestId('field'));
+    await user.keyboard('{Shift>}N{/Shift}');
+    expect(screen.getByTestId('field')).toHaveValue('N');
+    expect(player.getSnapshot().hasSession).toBe(true);
+
+    act(() => screen.getByTestId('field').blur());
+    act(() => useSession.getState().openDrawer('settings'));
+    await user.keyboard('{Shift>}N{/Shift}');
+    expect(player.getSnapshot().hasSession).toBe(true);
+    act(() => useSession.getState().closeDrawer());
+
+    // Plain n is not the shortcut.
+    await user.keyboard('n');
+    expect(player.getSnapshot().hasSession).toBe(true);
+
+    await user.keyboard('{Shift>}N{/Shift}');
+    expect(player.getSnapshot().hasSession).toBe(false);
+    expect(useDraft.getState().text).toBe('');
+    expect(useSession.getState().view).toBe('compose');
+  });
+
+  it('Shift+N leaves a draft alone in the composer', async () => {
+    const player = await startReading();
+    useSession.getState().setView('compose');
+    const user = userEvent.setup();
+    render(<Hotkeys />);
+
+    await user.keyboard('{Shift>}N{/Shift}');
+    expect(player.getSnapshot().hasSession).toBe(true);
+    expect(useDraft.getState().text).toBe(text);
   });
 });

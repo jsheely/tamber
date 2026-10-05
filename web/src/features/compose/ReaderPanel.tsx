@@ -64,16 +64,19 @@ export function ReaderPanel() {
                 <IconPencil size={18} />
               </Button>
             </Tooltip>
-            <Button
-              variant="light"
-              size="compact-md"
-              h={40}
-              leftSection={<IconPlus size={16} />}
-              onClick={startNew}
-              data-testid="reader-new"
-            >
-              New
-            </Button>
+            <Tooltip label="New (Shift+N)">
+              <Button
+                variant="light"
+                size="compact-md"
+                h={40}
+                leftSection={<IconPlus size={16} />}
+                onClick={startNew}
+                aria-keyshortcuts="Shift+N"
+                data-testid="reader-new"
+              >
+                New
+              </Button>
+            </Tooltip>
           </Group>
         </Group>
         <Group gap="xs" wrap="wrap" justify="space-between">

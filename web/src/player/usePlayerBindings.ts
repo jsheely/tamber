@@ -5,7 +5,7 @@ import { notifyError } from '../api/errors';
 import { useHistory } from '../store/history';
 import { useSession } from '../store/session';
 import { useSettings } from '../store/settings';
-import { playPause, stopPlayback } from './actions';
+import { playPause, startNew, stopPlayback } from './actions';
 import { getPlayer } from './instance';
 import { bindMediaSession } from './mediaSession';
 
@@ -67,9 +67,23 @@ function focusIsOnControl(): boolean {
   return el.matches('button, a, [role="button"], [role="slider"], [role="tab"], input, textarea, select');
 }
 
-/** Desktop shortcuts: Space play/pause, Left/Right previous/next sentence, Esc stop. */
+/**
+ * Desktop shortcuts: Space play/pause, Left/Right previous/next sentence, Esc stop, Shift+N new.
+ * useHotkeys already ignores keys typed into inputs, textareas, selects and editable content.
+ */
 export function usePlayerHotkeys(): void {
   useHotkeys([
+    [
+      'shift+N',
+      (e) => {
+        // Same reach as the reader's "New" button: only while reading, and not behind a drawer.
+        const { view, drawer } = useSession.getState();
+        if (drawer || view !== 'read' || !getPlayer().getSnapshot().hasSession) return;
+        e.preventDefault();
+        startNew();
+      },
+      { preventDefault: false },
+    ],
     [
       'space',
       (e) => {
