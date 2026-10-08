@@ -79,8 +79,8 @@ export function usePlayerHotkeys(): void {
         // Same reach as the reader's "New" button: only while reading, and not behind a drawer.
         const { view, drawer } = useSession.getState();
         if (drawer || view !== 'read' || !getPlayer().getSnapshot().hasSession) return;
-        e.preventDefault();
-        startNew();
+        e.preventDefault(); // or the N lands in the composer once it has focus
+        startNew({ focusComposer: true });
       },
       { preventDefault: false },
     ],

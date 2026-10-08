@@ -152,7 +152,7 @@ describe('ReaderPanel "New"', () => {
   afterEach(() => {
     setPlayer(null);
     useDraft.getState().clear();
-    useSession.setState({ view: 'compose', drawer: null });
+    useSession.setState({ view: 'compose', drawer: null, focusComposer: false });
   });
 
   const text = 'Read me once, then start over.';

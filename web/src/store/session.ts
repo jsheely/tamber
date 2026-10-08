@@ -15,6 +15,8 @@ export interface SessionState {
   voiceTab: VoiceTab;
   /** Focus the API key field when the settings drawer opens (401 / auth_required). */
   focusApiKey: boolean;
+  /** Focus the composer's text field when it shows (Shift+N, ready for a paste). */
+  focusComposer: boolean;
   connection: ConnectionState;
   connectionMessage: string | null;
   health: HealthResponse | null;
@@ -22,7 +24,7 @@ export interface SessionState {
   voicesDefault: string | null;
   voicesLoading: boolean;
   voicesError: string | null;
-  setView: (view: ViewMode) => void;
+  setView: (view: ViewMode, opts?: { focusComposer?: boolean }) => void;
   openDrawer: (drawer: DrawerName, opts?: { focusApiKey?: boolean; voiceTab?: VoiceTab }) => void;
   closeDrawer: () => void;
   setVoiceTab: (tab: VoiceTab) => void;
@@ -37,6 +39,7 @@ export const useSession = create<SessionState>()((set) => ({
   drawer: null,
   voiceTab: 'voices',
   focusApiKey: false,
+  focusComposer: false,
   connection: 'unknown',
   connectionMessage: null,
   health: null,
@@ -44,7 +47,7 @@ export const useSession = create<SessionState>()((set) => ({
   voicesDefault: null,
   voicesLoading: false,
   voicesError: null,
-  setView: (view) => set({ view }),
+  setView: (view, opts) => set({ view, focusComposer: opts?.focusComposer ?? false }),
   openDrawer: (drawer, opts) =>
     set((s) => ({
       drawer,

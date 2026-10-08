@@ -10,7 +10,7 @@ import { Providers } from '../Providers';
 import { useDraft } from '../store/draft';
 import { useSession } from '../store/session';
 import { getSettings, useSettings } from '../store/settings';
-import { FakeAudioContext, makeWav } from './fakes';
+import { createFakeFetch, FakeAudioContext, makeWav } from './fakes';
 
 const HEALTH: HealthResponse = {
   status: 'ok',
@@ -105,7 +105,14 @@ describe('App', () => {
   beforeEach(() => {
     useSettings.getState().reset();
     useSettings.getState().update({ apiBaseUrl: '', apiKey: '' });
-    useSession.setState({ drawer: null, view: 'compose', connection: 'unknown', health: null, voices: null });
+    useSession.setState({
+      drawer: null,
+      view: 'compose',
+      focusComposer: false,
+      connection: 'unknown',
+      health: null,
+      voices: null,
+    });
     useDraft.getState().clear();
   });
   afterEach(() => {
@@ -148,6 +155,52 @@ describe('App', () => {
     expect(getSettings().speed).toBe(1.5);
     expect(within(dialog).getByTestId('speed-preset-1.5')).toHaveAttribute('aria-pressed', 'true');
     expect(within(dialog).getByTestId('speed-preset-1')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  /** Puts the app in the reading view over a live session. */
+  async function startReading(): Promise<ChunkedPlayer> {
+    const ctx = new FakeAudioContext();
+    const player = new ChunkedPlayer({ createContext: () => ctx.asAudioContext(), anchor: noopAnchor });
+    setPlayer(player);
+    const text = 'Read me once, then start over.';
+    useDraft.getState().setText(text);
+    useSession.getState().setView('read');
+    player.unlock();
+    player.play(
+      { text, voice: 'af_heart', speed: 1, format: 'wav', chunkMode: 'sentence', lang: null },
+      { client: createFakeFetch().client },
+    );
+    await waitFor(() => expect(player.getSnapshot().hasSession).toBe(true));
+    return player;
+  }
+
+  it('Shift+N while reading starts over with the composer focused, ready for a paste', async () => {
+    mockServer();
+    const player = await startReading();
+    const user = userEvent.setup();
+    renderApp();
+    expect(screen.getByTestId('reader-new')).toBeInTheDocument();
+
+    await user.keyboard('{Shift>}N{/Shift}');
+    const composer = await screen.findByTestId('composer');
+    await waitFor(() => expect(composer).toHaveFocus());
+    // The N itself is swallowed; the next paste goes straight in.
+    expect(composer).toHaveValue('');
+    await user.paste('Fresh text');
+    expect(composer).toHaveValue('Fresh text');
+    expect(player.getSnapshot().hasSession).toBe(false);
+  });
+
+  it('the "New" button starts over without grabbing focus (no keyboard popping up on phones)', async () => {
+    mockServer();
+    await startReading();
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByTestId('reader-new'));
+    const composer = await screen.findByTestId('composer');
+    expect(composer).toHaveValue('');
+    expect(composer).not.toHaveFocus();
   });
 
   it('header voice button opens the voice-and-playback sheet on phones', async () => {

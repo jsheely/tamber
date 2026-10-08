@@ -70,7 +70,7 @@ export function ReaderPanel() {
                 size="compact-md"
                 h={40}
                 leftSection={<IconPlus size={16} />}
-                onClick={startNew}
+                onClick={() => startNew()}
                 aria-keyshortcuts="Shift+N"
                 data-testid="reader-new"
               >

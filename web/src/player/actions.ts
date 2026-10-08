@@ -98,12 +98,13 @@ export function stopPlayback(): void {
 
 /**
  * "New" in the reader: forget the current session, clear the draft and return to an empty
- * composer. The text is already in history (recorded when playback started).
+ * composer. The text is already in history (recorded when playback started). Shift+N also asks
+ * for the composer to take focus, so the next paste lands in it.
  */
-export function startNew(): void {
+export function startNew(opts: { focusComposer?: boolean } = {}): void {
   getPlayer().reset();
   useDraft.getState().clear();
-  useSession.getState().setView('compose');
+  useSession.getState().setView('compose', opts);
 }
 
 /** "Tap to resume" after an iOS interruption. */

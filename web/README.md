@@ -127,4 +127,4 @@ The icons come from `../assets/brand`, which is the source of truth and is never
 
 ## Keyboard (desktop)
 
-Space play/pause · Left/Right previous/next sentence · Esc stop (when no drawer is open) · Shift+N new (while reading, when no text field is focused).
+Space play/pause · Left/Right previous/next sentence · Esc stop (when no drawer is open) · Shift+N new, with the text box focused ready for a paste (while reading, when no text field is focused).

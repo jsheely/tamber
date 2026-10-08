@@ -7,7 +7,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { motion } from 'motion/react';
-import { useDeferredValue, useMemo, useRef } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef } from 'react';
 import { countWords, estimateSeconds, formatCount, formatDurationWords } from '../../lib/format';
 import { startPlayback } from '../../player/actions';
 import { useDraft } from '../../store/draft';
@@ -28,7 +28,13 @@ export function Composer() {
   const chunkMode = useSettings((s) => s.chunkMode);
   const limits = useSession((s) => s.health?.limits);
   const openDrawer = useSession((s) => s.openDrawer);
+  const focusComposer = useSession((s) => s.focusComposer);
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  // Shift+N lands here with the field focused, ready for a paste.
+  useEffect(() => {
+    if (focusComposer) ref.current?.focus();
+  }, [focusComposer]);
 
   const deferred = useDeferredValue(text);
   const stats = useMemo(() => {
