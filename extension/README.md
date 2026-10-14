@@ -4,7 +4,7 @@ A Manifest V3 extension that reads text aloud with your self-hosted [Tamber](../
 server, highlighting each word as it is spoken.
 
 - **Read anything**: select text, right-click, then choose **Read with Tamber** (or press
-  <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>). With nothing selected, the shortcut reads the
+  <kbd>Alt</kbd>+<kbd>Q</kbd>). With nothing selected, the shortcut reads the
   page's main text. The right-click menu also has **Read this page with Tamber** and
   **Read linked page with Tamber**.
 - **Side panel reader**: shows the exact text with word-by-word karaoke highlighting, a moving
@@ -87,11 +87,11 @@ new voice or speed takes effect from the current sentence.
 
 | Shortcut | Action |
 |---|---|
-| <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> | Read the selection (or the whole page when nothing is selected) |
+| <kbd>Alt</kbd>+<kbd>Q</kbd> | Read the selection (or the whole page when nothing is selected) |
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> | Play / pause (also resumes the last reading after the engine closed) |
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | Stop |
 
-These are the same on macOS (<kbd>Option</kbd>+<kbd>Shift</kbd>). You can change them at
+These are the same on macOS (<kbd>Option</kbd> for <kbd>Alt</kbd>). You can change them at
 `chrome://extensions/shortcuts` (**Options → Keyboard shortcuts → Change shortcuts**). If another
 extension already uses a combination, Chrome leaves Tamber's shortcut unset. The Options page shows
 which shortcuts are active.
@@ -99,7 +99,7 @@ which shortcuts are active.
 ## How it works
 
 ```
-page ── right-click / Alt+Shift+R ──▶ background (service worker, stateless relay)
+page ── right-click / Alt+Q ────────▶ background (service worker, stateless relay)
                                         │ scripting.executeScript (activeTab): selection / page HTML
                                         │ /v1/extract (page & link reads)
                                         │ offscreen.createDocument (AUDIO_PLAYBACK, hasDocument guard)

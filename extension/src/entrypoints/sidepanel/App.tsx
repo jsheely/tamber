@@ -49,7 +49,7 @@ function EmptyState({ configured }: { configured: boolean }) {
       </Text>
       <Text ta="center" size="sm" c="dimmed">
         Select text on any page and choose <b>Read with Tamber</b> from the right-click menu, press{' '}
-        <b>Alt+Shift+R</b>, or paste text below.
+        <b>Alt+Q</b>, or paste text below.
       </Text>
       {configured ? (
         <PasteBox minRows={4} maxRows={10} />

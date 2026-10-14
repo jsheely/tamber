@@ -86,7 +86,7 @@ Contract types, `TamberClient` (NDJSON streaming, extract, previews, test connec
 
 **Implemented:**
 
-- **Entry points:** context menus (selection, page, link) and shortcuts (Alt+Shift+R/P/S).
+- **Entry points:** context menus (selection, page, link) and shortcuts (Alt+Q read, Alt+Shift+P/S play-pause/stop).
 - **Playback:** an offscreen audio engine with the shared-design `ChunkedPlayer` and a memory bound.
 - **UI:** side-panel reader with highlighting, popup, options page (server with a runtime host-permission request, key, voice library, blends), and an on-demand shadow-DOM mini-player.
 - **Settings:** `chrome.storage.sync` for settings, with the key in `chrome.storage.local`.

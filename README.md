@@ -9,15 +9,6 @@ Kokoro-82M in one Docker container, a web app that streams on iPhone too, a Chro
 
 ---
 
-<!-- Screenshots: add real captures here (none are committed yet).
-     docs/screenshots/web-reader.png      web reader, word highlight mid-sentence (iPhone width)
-     docs/screenshots/web-voices.png      voice drawer with blend editor
-     docs/screenshots/extension.png       side panel reader + in-page mini-player
-     docs/screenshots/mobile-player.png   mobile player after sharing a web page -->
-| Web reader | Voices | Chrome extension | Mobile |
-|---|---|---|---|
-| _screenshot pending_ | _screenshot pending_ | _screenshot pending_ | _screenshot pending_ |
-
 ## What it is
 
 Tamber turns text, web pages and documents (PDF, DOCX, EPUB, HTML, Markdown, TXT) into natural speech with [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), running entirely on your own hardware. It replaces [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI):
@@ -27,6 +18,21 @@ Tamber turns text, web pages and documents (PDF, DOCX, EPUB, HTML, Markdown, TXT
 - **One container, four clients.** The API also serves the web UI. The Chrome extension reads any selection aloud, and the mobile app reads anything you share to it.
 - **Drop-in OpenAI-compatible** `/v1/audio/speech` on port 8880, so existing Kokoro-FastAPI integrations keep working.
 - **Remembers your settings** (server, voice, speed, format, theme and more) in every client.
+
+### Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/web-reader.png" alt="Web app reading a passage aloud, with the current word and sentence highlighted" width="100%" />
+  <br/><sub><b>Web app</b>: the current word and sentence highlight as Kokoro speaks</sub>
+</p>
+
+| Web app on iPhone | Android app | Chrome side panel |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/web-reader-iphone.png" alt="Web app reader at iPhone width" width="260" /> | <img src="docs/screenshots/mobile-player.png" alt="Android app playing text shared from another app" width="260" /> | <img src="docs/screenshots/extension-side-panel.png" alt="Chrome extension side panel reading a web page" width="260" /> |
+
+| Chrome mini-player on any page | Voice library |
+|:---:|:---:|
+| <img src="docs/screenshots/extension-mini-player.png" alt="Floating Tamber mini-player on a web article" /> | <img src="docs/screenshots/web-voices.png" alt="Voice drawer with search, language and gender filters" /> |
 
 ## Architecture
 
@@ -194,7 +200,7 @@ pnpm build:extension                # -> extension/.output/chrome-mv3/
 1. Open `chrome://extensions` and turn on **Developer mode**.
 2. Click **Load unpacked** and select `extension/.output/chrome-mv3`.
 3. The Options page opens: enter the server URL and key, then click **Save** and allow the permission prompt.
-4. Select text on any page and choose **Read with Tamber** from the context menu, or press **Alt+Shift+R**. **Alt+Shift+P** toggles play/pause and **Alt+Shift+S** stops.
+4. Select text on any page and choose **Read with Tamber** from the context menu, or press **Alt+Q**. **Alt+Shift+P** toggles play/pause and **Alt+Shift+S** stops.
 
 `pnpm zip:extension` produces `extension/.output/tamber-0.1.0-chrome.zip` for sharing.
 

@@ -35,7 +35,7 @@ export default defineConfig({
     optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
     commands: {
       'read-selection': {
-        suggested_key: { default: 'Alt+Shift+R', mac: 'Alt+Shift+R' },
+        suggested_key: { default: 'Alt+Q', mac: 'Alt+Q' },
         description: 'Read selected text aloud',
       },
       'toggle-playback': {
