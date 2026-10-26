@@ -37,8 +37,7 @@ describe('mini-player', () => {
         return true;
       },
     );
-    const host = document.createElement('div');
-    render(<MiniPlayer host={host} />);
+    render(<MiniPlayer />);
     await deliver(STATE);
 
     expect(screen.getByRole('region', { name: 'Tamber mini-player' })).toBeInTheDocument();
@@ -55,8 +54,7 @@ describe('mini-player', () => {
   });
 
   it('keeps a fixed layout: the status row is always rendered and errors use the sentence box', async () => {
-    const host = document.createElement('div');
-    const { container } = render(<MiniPlayer host={host} />);
+    const { container } = render(<MiniPlayer />);
     await deliver(STATE);
     // While playing the row shows the title instead of collapsing (no height change between states).
     expect(container.querySelector('.label')?.textContent).toBe('Article');
@@ -66,15 +64,16 @@ describe('mini-player', () => {
     expect(container.querySelector('.label')?.textContent).toBe('Paused');
 
     await deliver({ ...STATE, status: 'error', error: 'Cannot reach the server.', word: null });
-    expect(container.querySelector('.sentence.error')?.textContent).toBe('Cannot reach the server.');
+    expect(container.querySelector('.sentence.error')?.textContent).toBe(
+      'Cannot reach the server.',
+    );
     expect(container.querySelector('.label')?.textContent).toBe('Error');
   });
 
   it('shows errors and hides itself after reading finished', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      const host = document.createElement('div');
-      render(<MiniPlayer host={host} />);
+      render(<MiniPlayer />);
       await deliver({ ...STATE, status: 'error', error: 'Cannot reach the server.', word: null });
       expect(screen.getByText('Cannot reach the server.')).toBeInTheDocument();
       await deliver({ ...STATE, status: 'idle', word: null, progress: 1 });

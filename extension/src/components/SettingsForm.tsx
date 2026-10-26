@@ -361,27 +361,23 @@ function ReadingSettings() {
         checked={settings.autoScroll}
         onChange={(e) => void save({ autoScroll: e.currentTarget.checked })}
       />
-      <Switch
-        label="Show the floating mini-player on the page"
-        description="A small player in the corner of the page you are reading."
-        checked={ext.showMiniPlayer}
-        onChange={(e) => void saveExt({ showMiniPlayer: e.currentTarget.checked })}
-      />
       <Stack gap={4}>
         <Text size="sm" fw={500}>
           When reading starts from a page
         </Text>
         <Text size="xs" c="dimmed">
-          From the right-click menu or the keyboard shortcut. The popup needs Chrome 127 or newer.
+          From the right-click menu or the keyboard shortcut. The page player floats in the corner
+          of the page you are reading. The popup needs Chrome 127 or newer.
         </Text>
         <SegmentedControl
           aria-label="When reading starts from a page"
           value={ext.openOnPlay}
           onChange={(v) => void saveExt({ openOnPlay: v as OpenOnPlay })}
           data={[
+            { value: 'miniplayer', label: 'Page player' },
+            { value: 'sidepanel', label: 'Side panel' },
+            { value: 'popup', label: 'Popup' },
             { value: 'none', label: 'Just read' },
-            { value: 'sidepanel', label: 'Open the side panel' },
-            { value: 'popup', label: 'Show the popup' },
           ]}
         />
       </Stack>

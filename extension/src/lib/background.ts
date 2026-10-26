@@ -38,6 +38,7 @@ import {
   loadExtensionSettings,
   loadSettings,
   onSettingsChanged,
+  showsMiniPlayer,
   type ExtensionSettings,
 } from './settings';
 
@@ -107,6 +108,7 @@ function openPopup(tab: Tab): Promise<void> {
     });
 }
 
+/** The side panel or popup, when chosen; the mini-player is injected once reading starts. */
 function openReader(ext: ExtensionSettings, tab: Tab): Promise<void> | void {
   if (ext.openOnPlay === 'sidepanel') return openSidePanel(tab);
   if (ext.openOnPlay === 'popup') return openPopup(tab);
@@ -422,7 +424,7 @@ export function handleContextMenuClick(info: MenuInfo, tab?: Tab): Promise<void>
         };
       }
       if (!req) return;
-      if (tabId !== undefined && ext.showMiniPlayer) await injectMiniPlayer(tabId);
+      if (tabId !== undefined && showsMiniPlayer(ext)) await injectMiniPlayer(tabId);
       await startPlayback({ ...req, tabId: tabId ?? null }, settings);
     } catch (err) {
       await reportError(err, tabId);
@@ -495,7 +497,7 @@ async function readSelectionOrPage(
         sourceUrl: local?.url ?? null,
       };
     }
-    if (ext.showMiniPlayer) await injectMiniPlayer(tabId);
+    if (showsMiniPlayer(ext)) await injectMiniPlayer(tabId);
     return await startPlayback({ ...req, tabId }, settings);
   } catch (err) {
     await reportError(err, tabId);
@@ -560,7 +562,7 @@ async function relayState(state: MiniState, chunk: number): Promise<void> {
   if (chunk >= 0) void updateSessionChunk(chunk, state.sessionId).catch(() => undefined);
   if (state.tabId === null || state.tabId < 0) return;
   const ext = await currentExtensionSettings();
-  if (!ext.showMiniPlayer) return;
+  if (!showsMiniPlayer(ext)) return;
   const hidden = (await browser.storage.session.get(HIDDEN_KEY))[HIDDEN_KEY] as
     { tabId: number; sessionId: number } | undefined;
   if (hidden && hidden.tabId === state.tabId && hidden.sessionId === state.sessionId) return;

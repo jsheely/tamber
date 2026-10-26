@@ -85,7 +85,7 @@ function jsonResponse(body: unknown, status = 200) {
 describe('background: context menu', () => {
   beforeEach(async () => {
     await saveSettings({ apiBaseUrl: 'https://tts.example.com', voice: 'af_bella', speed: 1.25 });
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'none' });
+    setExtensionSettingsCache({ openOnPlay: 'none' });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -164,7 +164,7 @@ describe('background: context menu', () => {
   });
 
   it('opens the side panel synchronously, before any await, when chosen', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'sidepanel' });
+    setExtensionSettingsCache({ openOnPlay: 'sidepanel' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     const pending = handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     // Nothing has been awaited yet: the gesture-bound call already happened.
@@ -179,7 +179,7 @@ describe('background: context menu', () => {
   });
 
   it('opens the toolbar popup synchronously, before any await, when chosen', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    setExtensionSettingsCache({ openOnPlay: 'popup' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     const pending = handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     expect(apis.openPopup).toHaveBeenCalledWith({ windowId: 1 });
@@ -190,7 +190,7 @@ describe('background: context menu', () => {
   });
 
   it('still reads when the popup cannot be opened', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    setExtensionSettingsCache({ openOnPlay: 'popup' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     apis.openPopup.mockRejectedValueOnce(new Error('Could not find an active browser window.'));
     await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
@@ -204,14 +204,24 @@ describe('background: context menu', () => {
     expect(apis.openPopup).not.toHaveBeenCalled();
   });
 
-  it('injects the mini-player into the tab when enabled', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: true, openOnPlay: 'none' });
+  it('injects the mini-player into the tab when chosen', async () => {
+    setExtensionSettingsCache({ openOnPlay: 'miniplayer' });
     const apis = mockExtensionApis({ pageSelection: 'Hi.' });
     await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
     expect(apis.executeScript).toHaveBeenCalledWith({
       target: { tabId: 5 },
       files: [MINI_PLAYER_SCRIPT],
     });
+  });
+
+  it('does not inject the mini-player when the side panel is chosen', async () => {
+    setExtensionSettingsCache({ openOnPlay: 'sidepanel' });
+    const apis = mockExtensionApis({ pageSelection: 'Hi.' });
+    await handleContextMenuClick({ menuItemId: MENU_IDS.selection } as never, TAB);
+    expect(apis.open).toHaveBeenCalled();
+    expect(apis.executeScript).not.toHaveBeenCalledWith(
+      expect.objectContaining({ files: [MINI_PLAYER_SCRIPT] }),
+    );
   });
 
   it('sends the user to Options when no server is configured', async () => {
@@ -238,7 +248,7 @@ describe('background: context menu', () => {
 describe('background: commands', () => {
   beforeEach(async () => {
     await saveSettings({ apiBaseUrl: 'https://tts.example.com' });
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'none' });
+    setExtensionSettingsCache({ openOnPlay: 'none' });
   });
   afterEach(() => setExtensionSettingsCache(null));
 
@@ -252,7 +262,7 @@ describe('background: commands', () => {
   });
 
   it('read-selection opens the chosen reader UI inside the gesture', async () => {
-    setExtensionSettingsCache({ showMiniPlayer: false, openOnPlay: 'popup' });
+    setExtensionSettingsCache({ openOnPlay: 'popup' });
     const apis = mockExtensionApis({ pageSelection: 'Selected words.' });
     const pending = handleCommand('read-selection', TAB);
     expect(apis.openPopup).toHaveBeenCalledWith({ windowId: 1 });

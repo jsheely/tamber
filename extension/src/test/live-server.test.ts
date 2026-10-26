@@ -134,7 +134,9 @@ describe.skipIf(!URL_)('live Tamber server', () => {
   });
 
   it('seeking far ahead re-requests with start_chunk and keeps plan offsets', async () => {
-    const long = Array.from({ length: 10 }, (_, i) => `This is sentence number ${i + 1}.`).join(' ');
+    const long = Array.from({ length: 10 }, (_, i) => `This is sentence number ${i + 1}.`).join(
+      ' ',
+    );
     const { player, s } = makePlayer(settings({ chunkMode: 'sentence' }));
     player.load({ text: long, settings: s });
     await waitFor(() => player.getState().receivedChunks.length >= 1);
@@ -155,9 +157,9 @@ describe.skipIf(!URL_)('live Tamber server', () => {
     await waitFor(() => player.getState().error !== null);
     expect(player.getState().status).toBe('error');
     expect(player.getState().error).toContain('API key');
-    await expect(
-      createClient(settings({ apiKey: 'wrong' })).getVoices(),
-    ).rejects.toBeInstanceOf(TamberApiError);
+    await expect(createClient(settings({ apiKey: 'wrong' })).getVoices()).rejects.toBeInstanceOf(
+      TamberApiError,
+    );
     await player.dispose();
   });
 });

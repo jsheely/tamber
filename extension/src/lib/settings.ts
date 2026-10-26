@@ -4,7 +4,7 @@
  * Layout (docs/ARCHITECTURE.md section 7):
  * - chrome.storage.sync  ['tamber.settings']  = splitSecrets(settings).shared   (syncs across Chromes)
  * - chrome.storage.local ['tamber.secrets']   = { apiKey }                      (never synced)
- * - chrome.storage.sync  ['tamber.extension'] = { showMiniPlayer, openOnPlay }
+ * - chrome.storage.sync  ['tamber.extension'] = { openOnPlay }
  *
  * load() merges the parts and runs migrateSettings(); save(patch) runs updateSettings() and writes
  * the split parts back. chrome.storage.onChanged keeps every open context in sync (see useSettings).
@@ -30,28 +30,32 @@ export const EXTENSION_SETTINGS_KEY = 'tamber.extension';
 export const SYNC_ITEM_BUDGET_BYTES = 6 * 1024;
 
 /**
- * What opens when reading starts from a page (context menu or keyboard shortcut):
- * - 'none':      just read (the badge and, when enabled, the mini-player show progress),
- * - 'sidepanel': open the side panel reader,
- * - 'popup':     open the toolbar popup.
+ * What opens when reading starts from a page (context menu or keyboard shortcut). One choice, so
+ * the page player and the side panel / popup never show at the same time:
+ * - 'miniplayer': the floating player on the page being read,
+ * - 'sidepanel':  open the side panel reader,
+ * - 'popup':      open the toolbar popup,
+ * - 'none':       just read (the toolbar badge shows progress).
  */
-export const OPEN_ON_PLAY_VALUES = ['none', 'sidepanel', 'popup'] as const;
+export const OPEN_ON_PLAY_VALUES = ['miniplayer', 'sidepanel', 'popup', 'none'] as const;
 export type OpenOnPlay = (typeof OPEN_ON_PLAY_VALUES)[number];
 
 export interface ExtensionSettings {
-  /** Inject the floating in-page mini-player into the tab being read. */
-  showMiniPlayer: boolean;
   /** Which reader UI (if any) opens whenever reading starts from a page. */
   openOnPlay: OpenOnPlay;
 }
 
 export const DEFAULT_EXTENSION_SETTINGS: Readonly<ExtensionSettings> = Object.freeze({
-  showMiniPlayer: true,
-  openOnPlay: 'none',
+  openOnPlay: 'miniplayer',
 });
 
 function isOpenOnPlay(v: unknown): v is OpenOnPlay {
   return typeof v === 'string' && (OPEN_ON_PLAY_VALUES as readonly string[]).includes(v);
+}
+
+/** The in-page mini-player is injected into the tab being read. */
+export function showsMiniPlayer(ext: ExtensionSettings): boolean {
+  return ext.openOnPlay === 'miniplayer';
 }
 
 export function migrateExtensionSettings(raw: unknown): ExtensionSettings {
@@ -63,15 +67,13 @@ export function migrateExtensionSettings(raw: unknown): ExtensionSettings {
         ? 'sidepanel'
         : 'none'
       : null;
-  return {
-    showMiniPlayer:
-      typeof p.showMiniPlayer === 'boolean'
-        ? p.showMiniPlayer
-        : DEFAULT_EXTENSION_SETTINGS.showMiniPlayer,
-    openOnPlay: isOpenOnPlay(p.openOnPlay)
-      ? p.openOnPlay
-      : (legacy ?? DEFAULT_EXTENSION_SETTINGS.openOnPlay),
-  };
+  const chosen = isOpenOnPlay(p.openOnPlay) ? p.openOnPlay : legacy;
+  // Legacy `showMiniPlayer: boolean` (before the page player was one of the choices): it showed
+  // alongside the side panel or popup, and now replaces them when it was on.
+  if (typeof p.showMiniPlayer === 'boolean') {
+    return { openOnPlay: p.showMiniPlayer ? 'miniplayer' : (chosen ?? 'none') };
+  }
+  return { openOnPlay: chosen ?? DEFAULT_EXTENSION_SETTINGS.openOnPlay };
 }
 
 /** Merge the synced part and the local secrets into one validated TamberSettings. */

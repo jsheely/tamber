@@ -41,14 +41,13 @@ export default defineContentScript({
       append: 'last',
       css,
       isolateEvents: true,
-      onMount(container, _shadow, host) {
-        host.style.setProperty('position', 'fixed', 'important');
-        host.style.setProperty('right', '16px', 'important');
-        host.style.setProperty('bottom', '16px', 'important');
-        host.style.setProperty('z-index', '2147483647', 'important');
-        host.style.setProperty('display', 'block', 'important');
+      // The player pins itself to the viewport (.dock in style.css). Styling the host does not
+      // work: WXT's `:host { all: initial !important }` lives in the shadow tree, and important
+      // shadow rules beat even important inline styles, so the host stays static at the end of
+      // the document, below the fold.
+      onMount(container) {
         const root = createRoot(container);
-        root.render(<MiniPlayer host={host} />);
+        root.render(<MiniPlayer />);
         return root;
       },
       onRemove(root) {

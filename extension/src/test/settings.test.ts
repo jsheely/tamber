@@ -22,8 +22,7 @@ describe('settings adapter', () => {
     expect(s).toEqual({ ...DEFAULT_SETTINGS, favoriteVoices: [], savedBlends: [] });
     expect(s.apiBaseUrl).toBe('');
     expect(await loadExtensionSettings()).toEqual({
-      showMiniPlayer: true,
-      openOnPlay: 'none',
+      openOnPlay: 'miniplayer',
     });
   });
 
@@ -92,15 +91,15 @@ describe('settings adapter', () => {
   it('stores extension-only settings separately', async () => {
     await saveExtensionSettings({ openOnPlay: 'popup' });
     const sync = await fakeBrowser.storage.sync.get(EXTENSION_SETTINGS_KEY);
-    expect(sync[EXTENSION_SETTINGS_KEY]).toEqual({ showMiniPlayer: true, openOnPlay: 'popup' });
-    expect(await loadExtensionSettings()).toEqual({ showMiniPlayer: true, openOnPlay: 'popup' });
+    expect(sync[EXTENSION_SETTINGS_KEY]).toEqual({ openOnPlay: 'popup' });
+    expect(await loadExtensionSettings()).toEqual({ openOnPlay: 'popup' });
   });
 
   it('migrates the legacy openSidePanelOnPlay flag and rejects unknown openOnPlay values', async () => {
     await fakeBrowser.storage.sync.set({
       [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: false, openSidePanelOnPlay: true },
     });
-    expect(await loadExtensionSettings()).toEqual({ showMiniPlayer: false, openOnPlay: 'sidepanel' });
+    expect(await loadExtensionSettings()).toEqual({ openOnPlay: 'sidepanel' });
 
     await fakeBrowser.storage.sync.set({
       [EXTENSION_SETTINGS_KEY]: { openSidePanelOnPlay: false },
@@ -113,14 +112,36 @@ describe('settings adapter', () => {
     });
     expect((await loadExtensionSettings()).openOnPlay).toBe('popup');
     await fakeBrowser.storage.sync.set({ [EXTENSION_SETTINGS_KEY]: { openOnPlay: 'window' } });
-    expect((await loadExtensionSettings()).openOnPlay).toBe('none');
+    expect((await loadExtensionSettings()).openOnPlay).toBe('miniplayer');
+  });
 
-    // Saving rewrites the item in the new shape (the legacy key is dropped).
-    await saveExtensionSettings({ showMiniPlayer: true });
-    expect((await fakeBrowser.storage.sync.get(EXTENSION_SETTINGS_KEY))[EXTENSION_SETTINGS_KEY]).toEqual({
-      showMiniPlayer: true,
-      openOnPlay: 'none',
+  it('folds the legacy showMiniPlayer switch into the single choice', async () => {
+    // It used to show alongside the side panel / popup; when it was on, it is the choice now.
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: true, openOnPlay: 'sidepanel' },
     });
+    expect(await loadExtensionSettings()).toEqual({ openOnPlay: 'miniplayer' });
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: false, openOnPlay: 'popup' },
+    });
+    expect(await loadExtensionSettings()).toEqual({ openOnPlay: 'popup' });
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: false, openOnPlay: 'none' },
+    });
+    expect(await loadExtensionSettings()).toEqual({ openOnPlay: 'none' });
+
+    // Saving rewrites the item in the new shape (the legacy key is dropped), so a later choice of
+    // the side panel sticks.
+    await fakeBrowser.storage.sync.set({
+      [EXTENSION_SETTINGS_KEY]: { showMiniPlayer: true, openOnPlay: 'none' },
+    });
+    await saveExtensionSettings({ openOnPlay: 'sidepanel' });
+    expect(
+      (await fakeBrowser.storage.sync.get(EXTENSION_SETTINGS_KEY))[EXTENSION_SETTINGS_KEY],
+    ).toEqual({
+      openOnPlay: 'sidepanel',
+    });
+    expect((await loadExtensionSettings()).openOnPlay).toBe('sidepanel');
   });
 
   it('notifies subscribers when any part changes', async () => {
@@ -128,7 +149,7 @@ describe('settings adapter', () => {
     const off = onSettingsChanged(listener);
     await saveSettings({ speed: 1.1 });
     expect(listener).toHaveBeenCalledWith({ settings: true });
-    await saveExtensionSettings({ showMiniPlayer: false });
+    await saveExtensionSettings({ openOnPlay: 'none' });
     expect(listener).toHaveBeenCalledWith({ extension: true });
     off();
     listener.mockClear();
@@ -138,11 +159,11 @@ describe('settings adapter', () => {
 
   it('reset() restores the defaults', async () => {
     await saveSettings({ apiBaseUrl: 'https://tts.example.com', apiKey: 'k' });
-    await saveExtensionSettings({ showMiniPlayer: false });
+    await saveExtensionSettings({ openOnPlay: 'none' });
     await resetSettings();
     expect((await loadSettings()).apiBaseUrl).toBe('');
     expect((await loadSettings()).apiKey).toBe('');
-    expect((await loadExtensionSettings()).showMiniPlayer).toBe(true);
+    expect((await loadExtensionSettings()).openOnPlay).toBe('miniplayer');
   });
 
   it('keeps the synced item well under the 8 KB per-item quota', () => {

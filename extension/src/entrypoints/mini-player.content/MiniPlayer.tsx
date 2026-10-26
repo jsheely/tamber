@@ -23,6 +23,25 @@ const HIDE_AFTER_END_MS = 5000;
  * this line (0-based) of the box.
  */
 const ACTIVE_LINE = 1;
+/** The dock's resting gap from the bottom-right corner (see .dock in style.css). */
+const EDGE = 16;
+
+type Offset = { x: number; y: number };
+
+/**
+ * Keep the whole player inside the viewport. The offset moves it from its bottom-right resting
+ * place, so x and y are at most EDGE (flush right / bottom) and negative towards the top left.
+ */
+function clampOffset(o: Offset, el: HTMLElement | null): Offset {
+  const w = el?.offsetWidth ?? 0;
+  const h = el?.offsetHeight ?? 0;
+  const minX = Math.min(0, w + EDGE - window.innerWidth);
+  const minY = Math.min(0, h + EDGE - window.innerHeight);
+  return {
+    x: Math.min(EDGE, Math.max(minX, o.x)),
+    y: Math.min(EDGE, Math.max(minY, o.y)),
+  };
+}
 
 function send(msg: BackgroundMessage) {
   return browser.runtime.sendMessage(msg).catch(() => undefined);
@@ -98,10 +117,11 @@ function statusLabel(s: MiniState): string {
   }
 }
 
-export function MiniPlayer({ host }: { host: HTMLElement }) {
+export function MiniPlayer() {
   const [state, setState] = useState<MiniState | null>(null);
   const [visible, setVisible] = useState(true);
-  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 });
+  const dockRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
   const boxRef = useRef<HTMLParagraphElement>(null);
   const markRef = useRef<HTMLElement>(null);
@@ -126,7 +146,7 @@ export function MiniPlayer({ host }: { host: HTMLElement }) {
     void browser.storage.local
       .get(POS_KEY)
       .then((r) => {
-        const p = r[POS_KEY] as { x: number; y: number } | undefined;
+        const p = r[POS_KEY] as Offset | undefined;
         if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) setOffset(p);
       })
       .catch(() => undefined);
@@ -144,9 +164,18 @@ export function MiniPlayer({ host }: { host: HTMLElement }) {
     return () => clearTimeout(t);
   }, [ended, state?.sessionId]);
 
+  // A position saved in a larger window (or before a resize) is pulled back into view.
   useEffect(() => {
-    host.style.setProperty('transform', `translate(${offset.x}px, ${offset.y}px)`, 'important');
-  }, [host, offset]);
+    if (!visible || !state) return;
+    const fit = () =>
+      setOffset((o) => {
+        const c = clampOffset(o, dockRef.current);
+        return c.x === o.x && c.y === o.y ? o : c;
+      });
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [visible, state]);
 
   // Keep the active word visible inside the fixed-height sentence box. A new chunk (no word yet,
   // or a word on the first lines) rests at the top; as reading moves down a long chunk, the box
@@ -177,14 +206,9 @@ export function MiniPlayer({ host }: { host: HTMLElement }) {
   const onPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d) return;
-    const maxX = 16;
-    const maxY = 16;
-    const minX = -(window.innerWidth - 120);
-    const minY = -(window.innerHeight - 60);
-    setOffset({
-      x: Math.min(maxX, Math.max(minX, d.ox + e.clientX - d.px)),
-      y: Math.min(maxY, Math.max(minY, d.oy + e.clientY - d.py)),
-    });
+    setOffset(
+      clampOffset({ x: d.ox + e.clientX - d.px, y: d.oy + e.clientY - d.py }, dockRef.current),
+    );
   }, []);
 
   const onPointerUp = useCallback(() => {
@@ -207,70 +231,76 @@ export function MiniPlayer({ host }: { host: HTMLElement }) {
 
   return (
     <div
-      className="pill"
-      data-status={state.status}
-      role="region"
-      aria-label="Tamber mini-player"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      className="dock"
+      ref={dockRef}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
     >
-      <div className="orb" aria-hidden="true">
-        <span className="ring" />
-        <Glyph />
-      </div>
-      <div className="text" aria-live="polite">
-        <p className={state.status === 'error' ? 'sentence error' : 'sentence'} ref={boxRef}>
-          {w && state.status !== 'error' ? (
-            <>
-              <span className="spoken">{sentence.slice(0, w[0])}</span>
-              <mark ref={markRef}>{sentence.slice(w[0], w[1])}</mark>
-              {sentence.slice(w[1])}
-            </>
-          ) : (
-            body
+      <div
+        className="pill"
+        data-status={state.status}
+        role="region"
+        aria-label="Tamber mini-player"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <div className="orb" aria-hidden="true">
+          <span className="ring" />
+          <Glyph />
+        </div>
+        <div className="text" aria-live="polite">
+          <p className={state.status === 'error' ? 'sentence error' : 'sentence'} ref={boxRef}>
+            {w && state.status !== 'error' ? (
+              <>
+                <span className="spoken">{sentence.slice(0, w[0])}</span>
+                <mark ref={markRef}>{sentence.slice(w[0], w[1])}</mark>
+                {sentence.slice(w[1])}
+              </>
+            ) : (
+              body
+            )}
+          </p>
+          <p className="label">{label || ' '}</p>
+        </div>
+        <div className="buttons">
+          {state.status !== 'error' && (
+            <button
+              type="button"
+              className="primary"
+              aria-label={playing ? 'Pause' : 'Play'}
+              title={playing ? 'Pause (Alt+Shift+P)' : 'Play (Alt+Shift+P)'}
+              onClick={() => void control('toggle')}
+            >
+              <Svg>{playing ? Icon.pause : Icon.play}</Svg>
+            </button>
           )}
-        </p>
-        <p className="label">{label || ' '}</p>
-      </div>
-      <div className="buttons">
-        {state.status !== 'error' && (
           <button
             type="button"
-            className="primary"
-            aria-label={playing ? 'Pause' : 'Play'}
-            title={playing ? 'Pause (Alt+Shift+P)' : 'Play (Alt+Shift+P)'}
-            onClick={() => void control('toggle')}
+            aria-label="Stop"
+            title="Stop (Alt+Shift+S)"
+            onClick={() => {
+              void control('stop');
+              setVisible(false);
+            }}
           >
-            <Svg>{playing ? Icon.pause : Icon.play}</Svg>
+            <Svg>{Icon.stop}</Svg>
           </button>
-        )}
-        <button
-          type="button"
-          aria-label="Stop"
-          title="Stop (Alt+Shift+S)"
-          onClick={() => {
-            void control('stop');
-            setVisible(false);
-          }}
-        >
-          <Svg>{Icon.stop}</Svg>
-        </button>
-        <button
-          type="button"
-          aria-label="Close mini-player"
-          title="Close (keeps reading)"
-          onClick={() => {
-            setVisible(false);
-            void send({ target: 'background', type: 'hideMiniPlayer' });
-          }}
-        >
-          <Svg>{Icon.close}</Svg>
-        </button>
-      </div>
-      <div className="progress" aria-hidden="true">
-        <span style={{ transform: `scaleX(${Math.max(0, Math.min(1, state.progress))})` }} />
+          <button
+            type="button"
+            aria-label="Close mini-player"
+            title="Close (keeps reading)"
+            onClick={() => {
+              setVisible(false);
+              void send({ target: 'background', type: 'hideMiniPlayer' });
+            }}
+          >
+            <Svg>{Icon.close}</Svg>
+          </button>
+        </div>
+        <div className="progress" aria-hidden="true">
+          <span style={{ transform: `scaleX(${Math.max(0, Math.min(1, state.progress))})` }} />
+        </div>
       </div>
     </div>
   );

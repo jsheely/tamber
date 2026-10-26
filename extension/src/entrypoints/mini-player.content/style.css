@@ -32,6 +32,15 @@
   box-sizing: border-box;
 }
 
+/* Pinned to the viewport, so the player stays in view while the page scrolls. The drag offset is
+   a transform on top of the bottom-right corner. */
+.dock {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+}
+
 .pill {
   /* Set here, not on :host: WXT resets the host with `all: initial !important`. */
   font-family:

@@ -2,12 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { useSettingsState } from '../hooks/useSettings';
-import { saveExtensionSettings, saveSettings, SECRETS_KEY, SYNC_SETTINGS_KEY } from '../lib/settings';
+import {
+  saveExtensionSettings,
+  saveSettings,
+  SECRETS_KEY,
+  SYNC_SETTINGS_KEY,
+} from '../lib/settings';
 
 describe('useSettingsState (every extension page)', () => {
   it('rehydrates persisted settings on open (a reopened popup remembers them)', async () => {
-    await saveSettings({ apiBaseUrl: 'https://tts.example.com', apiKey: 'k1', voice: 'bf_emma', speed: 1.4 });
-    await saveExtensionSettings({ showMiniPlayer: false });
+    await saveSettings({
+      apiBaseUrl: 'https://tts.example.com',
+      apiKey: 'k1',
+      voice: 'bf_emma',
+      speed: 1.4,
+    });
+    await saveExtensionSettings({ openOnPlay: 'none' });
     const { result } = renderHook(() => useSettingsState());
     expect(result.current.ready).toBe(false);
     await waitFor(() => expect(result.current.ready).toBe(true));
@@ -17,7 +27,7 @@ describe('useSettingsState (every extension page)', () => {
       voice: 'bf_emma',
       speed: 1.4,
     });
-    expect(result.current.ext.showMiniPlayer).toBe(false);
+    expect(result.current.ext.openOnPlay).toBe('none');
   });
 
   it('persists its own changes and follows changes made in other contexts', async () => {
